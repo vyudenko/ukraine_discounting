@@ -1,0 +1,83 @@
+---
+title: "cleaning data"
+author: "Vadym Yudenko"
+format: html
+editor: visual
+---
+
+```{r}
+if (!require("tidyverse")) install.packages("tidyverse")
+if (!require("scales")) install.packages("scales")
+
+```
+
+```{r}
+data <- read_csv("D:/KSE/Projects/ukraine_discounting/data/survey_data.csv")
+
+#removing timestamp, feedback and introduction sections
+data <- data[,-c(1,2,48)]
+
+# renaming columns
+colnames <- c(
+  "Q1",
+  "Q1_now_1",
+  "Q1_now_2",
+  "Q1_wait_1",
+  "Q1_wait_2",
+  "Q2",
+  "Q2_wait_1",
+  "Q2_wait_2",
+  "Q2_now_1",
+  "Q2_now_2",
+  "Q3_gain_time",
+  "Q4_loss_time",
+  "Q5_framing",
+  "Q6_magnitude",
+  "Q7_prob",
+  "Q8_spending",
+  "Q9_vacation_or_pay",
+  "Q10_fin_expectation",
+  "Q11_income",
+  "Q12_war_fin_wellbeing",
+  "Q13_debts",
+  "Q14_family_fin_wellbeing",
+  "Q15_birth_year",
+  "Q15_gender",
+  "Q16_educ",
+  "Q17_employ",
+  "Q18_property_damage",
+  "Q18_bombing",
+  "Q18_steal",
+  "Q18_occupied_ter",
+  "Q18_emotion_violence",
+  "Q18_phisical_violence",
+  "Q18_nothing",
+  "Q18_relocation",
+  "Q19_living",
+  "Q20_living_before",
+  "Q21_info_source",
+  "Q22_family",
+  "Q22_ua_media",
+  "Q22_int_media",
+  "Q22_social_media",
+  "Q22_tv",
+  "Q22_paper",
+  "Q23_news_freq",
+  "Q24_apps"
+)
+
+colnames(data) <- colnames
+
+
+#renaming options
+data <- data %>% 
+  mutate(risk_preference = case_when(
+    str_detect(Q7_prob, "Отримати 6400 грн з ймовірністю 25%") ~ 4,              
+    str_detect(Q7_prob, "Отримати 3200 грн з ймовірністю 50%") ~ 3,              
+    str_detect(Q7_prob, "Отримати 2500 грн з ймовірністю 67%") ~ 2,              
+    str_detect(Q7_prob, "Отримати 2125 грн з ймовірністю 75%") ~ 1,              
+    str_detect(Q7_prob, "Guarante") ~ 0)) %>%
+  
+  mutate()
+
+```
