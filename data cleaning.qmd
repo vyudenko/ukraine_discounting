@@ -8,6 +8,7 @@ editor: visual
 ```{r}
 if (!require("tidyverse")) install.packages("tidyverse")
 if (!require("scales")) install.packages("scales")
+if (!require("ggplot2")) install.packages("ggplot2")
 ```
 
 ```{r}
@@ -151,11 +152,11 @@ data_clean <- data %>%
     str_detect(Q7_prob, "Отримати 2125 грн з ймовірністю 75%") ~ 1,              
     str_detect(Q7_prob, "Гарантовані 1600 грн") ~ 0)) %>%
 
-  mutate(Spend_3200 = case_when(
-    str_detect(Q6_magnitude, "Заощадження") ~ "savings",
-    str_detect(Q6_magnitude, "Борги, виплати") ~ "debts",
-    str_detect(Q6_magnitude, "Покупки, активності, розваги, подорожі/відпустка") ~ "leisure",
-    str_detect(Q6_magnitude, "Інвестиції") ~ "investment")) %>% 
+  mutate(Spend_3200 = fct_recode(Q8_spending, 
+                                 "savings" = "Заощадження",
+                                 "debts" = "Борги, виплати",
+                                 "leisure" = "Покупки, активності, розваги, подорожі/відпустка",
+                                 "investment" = "Інвестиції")) %>% 
 
   mutate(Time_vs_Money = fct_recode(Q9_vacation_or_pay, 
                                     "additional_salary_later" = "Дві додаткові виплати тижневої зарплати без додаткової роботи в наступному 2024 році",
@@ -164,24 +165,24 @@ data_clean <- data %>%
                                     "additional_holiday_now" = "Один додатковий тиждень відпустки без зміни зарплати в нинішньому 2023 році")) %>%
   
   mutate(Fin_expectation = fct_recode(Q10_fin_expectation, 
-                                    "same" = "Буде приблизно так само",
-                                    "worse" = "Буде дещо гірше, ніж зараз",
                                     "much_worse" = "Буде набагато гірше, ніж зараз",
+                                    "worse" = "Буде дещо гірше, ніж зараз",
+                                    "same" = "Буде приблизно так само",
                                     "better" = "Буде дещо краще, ніж зараз",
                                     "much_better" = "Буде набагато краще, ніж зараз")) %>%
   
   mutate(Income = fct_recode(Q11_income, 
                                     "inc_1k" = "Менше 1000",
                                     "inc_5k" = "1000 - 5000 гривень",
-                                    "inc_1k" = "5000 - 10000 гривень",
+                                    "inc_10k" = "5000 - 10000 гривень",
                                     "inc_15k" = "10000 - 15000 гривень",
                                     "inc_20k" = "15000 - 20000 гривень",
                                     "inc_20k+" = "Більше 20000 гривень")) %>%
   
   mutate(Fin_wellbeing = fct_recode(Q12_war_fin_wellbeing, 
-                                    "same" = "Ніяк не змінилось",
-                                    "worse" = "Дещо погіршилось",
                                     "much_worse" = "Суттєво погіршилось",
+                                    "worse" = "Дещо погіршилось",
+                                    "same" = "Ніяк не змінилось",
                                     "better" = "Дещо покращилось",
                                     "much_better" = "Суттєво покращилось")) %>%
   
@@ -397,5 +398,95 @@ data_clean <- data_clean[,-c(1:45)]
 ## We use answers to the three baseline sets of questions plus the answers to the common difference, subadditivity, and delay-speedup items to compute the temporal discount scores.
 
 ## Computing the rates of the five anomalies
+
+
+data_clean$score <- rowSums(data_clean[, c("gain", "gain_now_1", "gain_now_2", "gain_later_1", "gain_later_2", "pay", "pay_later_1", "pay_later_2", "pay_now_1", "pay_now_2")], na.rm = TRUE)
 ```
 
+## EDA
+
+```{r}
+ggplot(data_clean, aes(Income)) +
+  geom_bar() +
+    labs(title = "Income distribution") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5, size = 14, face = "bold", family = "mono"),
+        axis.title = element_blank(),
+        panel.grid.major = element_line(),
+        plot.subtitle = element_text(hjust = 0.5, size = 8, face = "italic", family = "mono"),
+        axis.text = element_text(size = 10, family = "mono"),
+        axis.text.x = element_text(angle = 0, hjust = 1),
+        plot.caption = element_text(face = "bold", family = "mono"))
+```
+
+```{r}
+ggplot(data_clean, aes(Fin_wellbeing, fill = Family_fin_wellbeing)) +
+  geom_bar() +
+  labs(title = "Financial Wellbeing") +
+
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5, size = 14, face = "bold", family = "mono"),
+        axis.title = element_blank(),
+        panel.grid.major = element_line(),
+        plot.subtitle = element_text(hjust = 0.5, size = 8, face = "italic", family = "mono"),
+        axis.text = element_text(size = 10, family = "mono"),
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        plot.caption = element_text(face = "bold", family = "mono"))
+```
+
+```{r}
+ggplot(data_clean, aes(Fin_wellbeing, fill = Family_fin_wellbeing)) +
+  geom_bar() +
+  labs(title = "Financial Wellbeing") +
+
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5, size = 14, face = "bold", family = "mono"),
+        axis.title = element_blank(),
+        panel.grid.major = element_line(),
+        plot.subtitle = element_text(hjust = 0.5, size = 8, face = "italic", family = "mono"),
+        axis.text = element_text(size = 10, family = "mono"),
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        plot.caption = element_text(face = "bold", family = "mono"))
+```
+
+```{r}
+ggplot(data_clean, aes(x = score, fill = Gender)) +
+  geom_bar() +
+  labs(title = "Score_v1 dist") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5, size = 14, face = "bold", family = "mono"),
+        axis.title = element_blank(),
+        panel.grid.major = element_line(),
+        plot.subtitle = element_text(hjust = 0.5, size = 8, face = "italic", family = "mono"),
+        axis.text = element_text(size = 10, family = "mono"),
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        plot.caption = element_text(face = "bold", family = "mono"))
+```
+
+```{r}
+ggplot(data_clean, aes(Fin_expectation, fill = Fin_wellbeing)) +
+  geom_bar() +
+  labs(title = "Expectation") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5, size = 14, face = "bold", family = "mono"),
+        axis.title = element_blank(),
+        panel.grid.major = element_line(),
+        plot.subtitle = element_text(hjust = 0.5, size = 8, face = "italic", family = "mono"),
+        axis.text = element_text(size = 10, family = "mono"),
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        plot.caption = element_text(face = "bold", family = "mono"))
+```
+
+```{r}
+ggplot(data_clean, aes(x = Spend_3200, fill = as.factor(score))) +
+  geom_bar() +
+  labs(title = "How would you spend 3200?") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5, size = 14, face = "bold", family = "mono"),
+        axis.title = element_blank(),
+        panel.grid.major = element_line(),
+        plot.subtitle = element_text(hjust = 0.5, size = 8, face = "italic", family = "mono"),
+        axis.text = element_text(size = 10, family = "mono"),
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        plot.caption = element_text(face = "bold", family = "mono"))
+```
