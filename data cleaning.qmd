@@ -6,11 +6,43 @@ editor: visual
 ---
 
 ```{r}
-if (!require("tidyverse")) install.packages("tidyverse")
-if (!require("scales")) install.packages("scales")
-if (!require("ggplot2")) install.packages("ggplot2")
-if (!require("hrbrthemes"))install.packages("hrbrthemes")
+knitr::opts_chunk$set(
+  warning = FALSE,
+  message = FALSE
+)
 ```
+
+
+```{r}
+packages <- c("lattice", 
+              "tidyverse", 
+              "likert", 
+              "MASS", 
+              "psych",
+              "viridis", 
+              "ggplot2", 
+              "here",
+              "flextable", 
+              "devtools", 
+              "GPArotation",
+              "ufs", 
+              "remotes",
+              "ggplot2",
+              "ggExtra",
+              "ggthemes",
+              "gtsummary",
+              "hrbrthemes",
+              "scales")
+
+install_missing_packages <- function(package) {
+  if (!require(package, character.only = TRUE)) {
+    install.packages(package)
+  }
+}
+
+lapply(packages, install_missing_packages)
+```
+
 
 ```{r}
 data <- read_csv("D:/KSE/Projects/ukraine_discounting/data/survey_data.csv")
@@ -74,7 +106,8 @@ colnames(data) <- colnames
 #renaming options
 data_clean <- data %>%
   
-  #if the person chooses a delayed option - 0, choosing now - 1
+# 0 (always prefer delayed gains or earlier losses) 
+# 15 (always prefer immediate gains or delayed losses).
   
   mutate(gain = case_when(
     str_detect(Q1, "Отримати 1600 грн прямо зараз") ~ 1,
@@ -97,24 +130,24 @@ data_clean <- data %>%
     str_detect(Q1_wait_2, "Отримати 1920 грн за 3 місяці") ~ 0)) %>%
   
   mutate(pay = case_when(
-    str_detect(Q2, "Заплатити 1600 грн прямо зараз") ~ 1,
-    str_detect(Q2, "Заплатити 2080 грн за 3 місяці") ~ 0)) %>%
+    str_detect(Q2, "Заплатити 1600 грн прямо зараз") ~ 0,
+    str_detect(Q2, "Заплатити 2080 грн за 3 місяці") ~ 1)) %>%
   
   mutate(pay_later_1 = case_when(
-    str_detect(Q2_wait_1, "Заплатити 1600 грн прямо зараз") ~ 1,
-    str_detect(Q2_wait_1, "Заплатити 2240 грн за 3 місяці") ~ 0)) %>%
+    str_detect(Q2_wait_1, "Заплатити 1600 грн прямо зараз") ~ 0,
+    str_detect(Q2_wait_1, "Заплатити 2240 грн за 3 місяці") ~ 1)) %>%
   
   mutate(pay_later_2 = case_when(
-    str_detect(Q2_wait_2, "Заплатити 1600 грн прямо зараз") ~ 1,
-    str_detect(Q2_wait_2, "Заплатити 2160 грн за 3 місяці") ~ 0)) %>%
+    str_detect(Q2_wait_2, "Заплатити 1600 грн прямо зараз") ~ 0,
+    str_detect(Q2_wait_2, "Заплатити 2160 грн за 3 місяці") ~ 1)) %>%
   
   mutate(pay_now_1 = case_when(
-    str_detect(Q2_now_1, "Заплатити 1600 грн прямо зараз") ~ 1,
-    str_detect(Q2_now_1, "Заплатити 2000 грн за 3 місяці") ~ 0)) %>%
+    str_detect(Q2_now_1, "Заплатити 1600 грн прямо зараз") ~ 0,
+    str_detect(Q2_now_1, "Заплатити 2000 грн за 3 місяці") ~ 1)) %>%
   
   mutate(pay_now_2 = case_when(
-    str_detect(Q2_now_2, "Заплатити 1600 грн прямо зараз") ~ 1,
-    str_detect(Q2_now_2, "Заплатити 1920 грн за 3 місяці") ~ 0)) %>%
+    str_detect(Q2_now_2, "Заплатити 1600 грн прямо зараз") ~ 0,
+    str_detect(Q2_now_2, "Заплатити 1920 грн за 3 місяці") ~ 1)) %>%
   
   ### ISSUE (HOW TO GO ABOUT THESE QUESTIONS)
   
@@ -396,10 +429,29 @@ data_clean <- data_clean[,-c(1:45)]
 ### Checking for sus responses
 
 ```{r}
-data_clean$
+# Create a summary table
+summary_table <- data_clean[,c(18:24)] %>%
+  tbl_summary(by = Gender) %>%  # replace 'group_column' with the actual grouping column
+  add_n() %>% 
+  modify_header(label = "**Variable**") %>% # update the column header
+  bold_labels()
+
+# Print the summary table
+summary_table
+```
+
+```{r}
+data_media <- data_clean[, c(37:59)] %>% 
+  mutate(fast_news = case_when(
+    News_frequence %in% c("5_times", "10_times", "10+") & (instagram == 1 | tiktok == 1 | telegram == 1) ~ 1,
+    TRUE ~ 0)) %>% 
+  mutate(slow_news = case_when(
+    News_frequence %in% c("never", "1_time") & (twitter == 1 | facebook == 1) ~ 1,
+    TRUE ~ 0))
 
 
 ```
+
 
 ```{r}
 ## We estimate the anomalies rates for the five anomalies (present bias = presbias; absolute magnitude = absolmag, gain-loss asymmetry = gainloss; delay-speedup = delayspeed; subadditivity = subaddit). 
@@ -408,96 +460,25 @@ data_clean$
 ## Computing the rates of the five anomalies
 
 
+# data_clean$score_v1 <- rowMeans(data_clean[, c("gain", "gain_now_1", "gain_now_2", "gain_later_1", "gain_later_2", "pay", "pay_later_1", "pay_later_2", "pay_now_1", "pay_now_2")], na.rm = TRUE)
+
 data_clean$score <- rowSums(data_clean[, c("gain", "gain_now_1", "gain_now_2", "gain_later_1", "gain_later_2", "pay", "pay_later_1", "pay_later_2", "pay_now_1", "pay_now_2")], na.rm = TRUE)
+
+data_clean$score_gains <- rowSums(data_clean[, c("gain", "gain_now_1", "gain_now_2", "gain_later_1", "gain_later_2")], na.rm = TRUE)
+
+data_clean$score_losses <- rowSums(data_clean[, c("pay", "pay_later_1", "pay_later_2", "pay_now_1", "pay_now_2")], na.rm = TRUE)
 ```
 
+## Summary Stats
+
 ```{r}
-# following Kai Ruggery here 
-dat_item <- data %>%
-  
-  mutate(amount_later16 = case_when(
-    Q1 == "Отримати 2080 грн за 3 місяці" & Q1_wait_1 == "Отримати 1600 грн прямо зараз" ~ 2080,
-    Q1_now_1 == "Отримати 2160 грн за 3 місяці" ~ 2160,
-    Q1_now_2 == "Отримати 1600 грн прямо зараз" | Q1_now_2 == "Отримати 2240 грн за 3 місяці" ~ 2240,
-    Q1_wait_1 == "Отримати 2000 грн за 3 місяці" & Q1_wait_1 == "Отримати 1600 грн прямо зараз" ~ 2000,
-    Q1_wait_2 == "Отримати 1920 грн за 3 місяці" ~ 1920)) %>% 
-  
-  mutate(amount_later17 = case_when(
-    Q1 == "Отримати 2080 грн за 3 місяціs" & Q1_wait_1 == "Отримати 1600 грн прямо зараз" ~ 2160,
-    Q1_now_1 == "Отримати 2160 грн за 3 місяці" ~ 2240,
-    Q1_now_2 == "Отримати 2240 грн за 3 місяці" | Q1_now_2 == "Отримати 1600 грн прямо зараз" ~ 2320,
-    Q1_wait_1 == "Отримати 2000 грн за 3 місяці" & Q1_wait_2 == "Отримати 1600 грн прямо зараз" ~ 2080,
-    Q1_wait_2 == "Отримати 1920 грн за 3 місяці" ~ 2000)) %>% 
-  
-  mutate(amount_later18 = case_when(
-    amount_later16 == 1920  ~ 1920,
-    amount_later16 == 2000  ~ 2000,
-    amount_later16 == 2080  ~ 2080,
-    amount_later16 == 2160  ~ 2160,
-    amount_later16 == 2240  ~ 2240
-  )) %>% 
-  
-  mutate(amount_later19 = case_when(
-    amount_later16 == 1920  ~ 1920,
-    amount_later16 == 2000  ~ 2000,
-    amount_later16 == 2080  ~ 2080,
-    amount_later16 == 2160  ~ 2160,
-    amount_later16 == 2240  ~ 2240
-  )) %>% 
-  
-  pivot_longer(Q1:Q5_framing, 
-               names_to = c("question")) %>%
-  
-  # what does this code do? idk
-  #
-  # mutate (delay_sooner = rep(c(rep(0, 15), 12, 0, 0, 0), length(unique(ResponseId))),
-  #         delay_later  = rep(c(rep(12, 15), 24, 24, 12, 12),length(unique(ResponseId))),
-  #         amount_sooner = rep(c(rep(500, 10), 
-  #                               rep(5000, 5),
-  #                               rep(500, 4)), length(unique(ResponseId)))) %>%
-  
-  mutate (amount_later = case_when(
-    question == "Q1" | question == "Q2" ~ 550,
-    question == "Q1_now_1" | question == "Q2_wait_1" ~ 600,
-    question == "Q1_now_2" | question == "Q2_wait_2" ~ 750,
-    question == "Q1_wait_1" | question == "Q2_now_1"~ 510,
-    question == "Q1_wait_2" | question == "Q2_now_2"~ 505,
-    # question == "Gain5500" ~ 5500,
-    # question == "Gain6000" ~ 6000,
-    # question == "Gain7500" ~ 7500,
-    # question == "Gain5100" ~ 5100,
-    # question == "Gain5050" ~ 5050,
-    question == "Common_difference" ~ amount_later16,
-    question == "Subadditivity" ~ amount_later17,
-    question == "Delay_speedup_1" ~ amount_later18,
-    question == "Delay_speedup_2" ~ amount_later19
-  )) %>%
-  
-  
-  mutate (question = paste("Q",rep(1:ncol(select(data, Gain550:"Delay_speedup_2")), nrow(dat)), sep ="")) %>%
-  mutate (question_num = as.numeric(gsub("Q", "", question))) %>%
-  
-  mutate ( block = case_when(
-    question_num < 6 ~ "block1",
-    question_num >= 6 & question_num < 11 ~ "block2",
-    question_num >= 11 & question_num < 16 ~ "block3",
-    question_num == 16 ~ "anom1",
-    question_num == 17 ~ "anom2",
-    question_num == 18 ~ "anom3",
-    question_num == 19 ~ "anom3",
-  )) %>% 
-  
-  mutate (choice = case_when(
-    is.na(value) ~ NA_real_,
-    str_detect(value, "500 right now") ~ 0,
-    str_detect(value, "5000 right now") ~ 0,
-    str_detect(value, "5500 in 12 months") ~ 1,
-    str_detect(value, "7500 in 12 months") ~ 1,
-    str_detect(value, "500 in 12 months") ~ 0,
-    str_detect(value, "Reduce") ~ 0,
-    TRUE  ~ 1
-  ))
+summary_stats_1 <- data_clean %>%
+  dplyr::mutate_if(is.character, factor) %>%
+  dplyr::mutate_if(is.numeric, factor, levels = 1:5, labels ) %>%
+  drop_na() %>%
+  as.data.frame()
 ```
+
 
 ## EDA
 
@@ -505,89 +486,57 @@ dat_item <- data %>%
 ggplot(data_clean, aes(Income)) +
   geom_bar() +
     labs(title = "Income distribution") +
-  theme_bw() +
-  theme(plot.title = element_text(hjust = 0.5, size = 14, face = "bold", family = "mono"),
-        axis.title = element_blank(),
-        panel.grid.major = element_line(),
-        plot.subtitle = element_text(hjust = 0.5, size = 8, face = "italic", family = "mono"),
-        axis.text = element_text(size = 10, family = "mono"),
-        axis.text.x = element_text(angle = 0, hjust = 1),
-        plot.caption = element_text(face = "bold", family = "mono"))
+  theme_fivethirtyeight()
 ```
+
 
 ```{r}
 ggplot(data_clean, aes(Fin_wellbeing, fill = Family_fin_wellbeing)) +
   geom_bar() +
   labs(title = "Financial Wellbeing") +
-
-  theme_bw() +
-  theme(plot.title = element_text(hjust = 0.5, size = 14, face = "bold", family = "mono"),
-        axis.title = element_blank(),
-        panel.grid.major = element_line(),
-        plot.subtitle = element_text(hjust = 0.5, size = 8, face = "italic", family = "mono"),
-        axis.text = element_text(size = 10, family = "mono"),
-        axis.text.x = element_text(angle = 45, hjust = 1),
-        plot.caption = element_text(face = "bold", family = "mono"))
+  theme_fivethirtyeight()
 ```
 
 ```{r}
-ggplot(data_clean, aes(Fin_wellbeing, fill = Family_fin_wellbeing)) +
-  geom_bar() +
-  labs(title = "Financial Wellbeing") +
-  theme_cleveland() +
-  theme(plot.title = element_text(hjust = 0.5, size = 14, face = "bold", family = "mono"),
-        axis.title = element_blank(),
-        panel.grid.major = element_line(),
-        plot.subtitle = element_text(hjust = 0.5, size = 8, face = "italic", family = "mono"),
-        axis.text = element_text(size = 10, family = "mono"),
-        axis.text.x = element_text(angle = 45, hjust = 1),
-        plot.caption = element_text(face = "bold", family = "mono"))
+g1 <- ggplot(data_clean, aes(x = score, fill = Gender)) +
+  geom_bar(position = "identity") +
+  labs(title = "Score_overal") +
+  theme_fivethirtyeight()
+
+g2 <- ggplot(data_clean, aes(x = score_gains, fill = Gender)) +
+  geom_bar(position = "identity") +
+  labs(title = "Score_gains") +
+  theme_fivethirtyeight()
+
+g3 <- ggplot(data_clean, aes(x = score_losses, fill = Gender)) +
+  geom_bar(position = "identity") +
+  labs(title = "Score_losses") +
+  theme_fivethirtyeight()
 ```
 
 ```{r}
-ggplot(data_clean, aes(x = score, fill = Gender)) +
-  geom_bar() +
-  labs(title = "Score_v1 dist") +
-  bbc_style() +
-  theme(plot.title = element_text(hjust = 0.5, size = 14, face = "bold", family = "mono"),
-        axis.title = element_blank(),
-        panel.grid.major = element_line(),
-        plot.subtitle = element_text(hjust = 0.5, size = 8, face = "italic", family = "mono"),
-        axis.text = element_text(size = 10, family = "mono"),
-        axis.text.x = element_text(angle = 45, hjust = 1),
-        plot.caption = element_text(face = "bold", family = "mono"))
+#|message: false
+#|warning: false
+gridExtra::grid.arrange(g1,g2,g3, ncol = 3)
 ```
+
 
 ```{r}
 ggplot(data_clean, aes(Fin_expectation, fill = Fin_wellbeing)) +
   geom_bar() +
   labs(title = "Expectation") +
-  theme_bw() +
-  theme(plot.title = element_text(hjust = 0.5, size = 14, face = "bold", family = "mono"),
-        axis.title = element_blank(),
-        panel.grid.major = element_line(),
-        plot.subtitle = element_text(hjust = 0.5, size = 8, face = "italic", family = "mono"),
-        axis.text = element_text(size = 10, family = "mono"),
-        axis.text.x = element_text(angle = 45, hjust = 1),
-        plot.caption = element_text(face = "bold", family = "mono"))
+  theme_bw()
 ```
 
 ```{r}
 ggplot(data_clean, aes(x = Spend_3200, fill = as.factor(score))) +
   geom_bar() +
   labs(title = "How would you spend 3200?") +
-  theme_bw() +
-  theme(plot.title = element_text(hjust = 0.5, size = 14, face = "bold", family = "mono"),
-        axis.title = element_blank(),
-        panel.grid.major = element_line(),
-        plot.subtitle = element_text(hjust = 0.5, size = 8, face = "italic", family = "mono"),
-        axis.text = element_text(size = 10, family = "mono"),
-        axis.text.x = element_text(angle = 45, hjust = 1),
-        plot.caption = element_text(face = "bold", family = "mono"))
+  theme_bw()
 ```
 
 ## Analysis
 
 ```{r}
-mod1 <- lm(score ~ Risk_preference + data_clean$ + Gender + 
+mod1 <- lm(score ~ data_clean$ + Gender + 
 ```
