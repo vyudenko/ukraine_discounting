@@ -9,6 +9,7 @@ editor: visual
 if (!require("tidyverse")) install.packages("tidyverse")
 if (!require("scales")) install.packages("scales")
 if (!require("ggplot2")) install.packages("ggplot2")
+if (!require("hrbrthemes"))install.packages("hrbrthemes")
 ```
 
 ```{r}
@@ -202,10 +203,9 @@ data_clean <- data %>%
   
   mutate(birthyear = if_else(Q15_birth_year == 88, 1988, Q15_birth_year)) %>%
   
-  mutate(Gender = fct_recode(Q15_gender, 
-                             "Female" = "Жінка",
-                             "Male" = "Чоловік", 
-                             "Other" = "Не хочу відповідати")) %>% 
+  mutate(Gender = ifelse(Q15_gender == "Жінка", 1, 
+                         ifelse(Q15_gender == "Чоловік", 0, NA))) %>%
+  
   
   mutate(EducationCompleted = fct_recode(Q16_educ, 
                                          
@@ -393,6 +393,14 @@ data_clean <- data %>%
 data_clean <- data_clean[,-c(1:45)]
 ```
 
+### Checking for sus responses
+
+```{r}
+data_clean$
+
+
+```
+
 ```{r}
 ## We estimate the anomalies rates for the five anomalies (present bias = presbias; absolute magnitude = absolmag, gain-loss asymmetry = gainloss; delay-speedup = delayspeed; subadditivity = subaddit). 
 ## We use answers to the three baseline sets of questions plus the answers to the common difference, subadditivity, and delay-speedup items to compute the temporal discount scores.
@@ -401,6 +409,94 @@ data_clean <- data_clean[,-c(1:45)]
 
 
 data_clean$score <- rowSums(data_clean[, c("gain", "gain_now_1", "gain_now_2", "gain_later_1", "gain_later_2", "pay", "pay_later_1", "pay_later_2", "pay_now_1", "pay_now_2")], na.rm = TRUE)
+```
+
+```{r}
+# following Kai Ruggery here 
+dat_item <- data %>%
+  
+  mutate(amount_later16 = case_when(
+    Q1 == "Отримати 2080 грн за 3 місяці" & Q1_wait_1 == "Отримати 1600 грн прямо зараз" ~ 2080,
+    Q1_now_1 == "Отримати 2160 грн за 3 місяці" ~ 2160,
+    Q1_now_2 == "Отримати 1600 грн прямо зараз" | Q1_now_2 == "Отримати 2240 грн за 3 місяці" ~ 2240,
+    Q1_wait_1 == "Отримати 2000 грн за 3 місяці" & Q1_wait_1 == "Отримати 1600 грн прямо зараз" ~ 2000,
+    Q1_wait_2 == "Отримати 1920 грн за 3 місяці" ~ 1920)) %>% 
+  
+  mutate(amount_later17 = case_when(
+    Q1 == "Отримати 2080 грн за 3 місяціs" & Q1_wait_1 == "Отримати 1600 грн прямо зараз" ~ 2160,
+    Q1_now_1 == "Отримати 2160 грн за 3 місяці" ~ 2240,
+    Q1_now_2 == "Отримати 2240 грн за 3 місяці" | Q1_now_2 == "Отримати 1600 грн прямо зараз" ~ 2320,
+    Q1_wait_1 == "Отримати 2000 грн за 3 місяці" & Q1_wait_2 == "Отримати 1600 грн прямо зараз" ~ 2080,
+    Q1_wait_2 == "Отримати 1920 грн за 3 місяці" ~ 2000)) %>% 
+  
+  mutate(amount_later18 = case_when(
+    amount_later16 == 1920  ~ 1920,
+    amount_later16 == 2000  ~ 2000,
+    amount_later16 == 2080  ~ 2080,
+    amount_later16 == 2160  ~ 2160,
+    amount_later16 == 2240  ~ 2240
+  )) %>% 
+  
+  mutate(amount_later19 = case_when(
+    amount_later16 == 1920  ~ 1920,
+    amount_later16 == 2000  ~ 2000,
+    amount_later16 == 2080  ~ 2080,
+    amount_later16 == 2160  ~ 2160,
+    amount_later16 == 2240  ~ 2240
+  )) %>% 
+  
+  pivot_longer(Q1:Q5_framing, 
+               names_to = c("question")) %>%
+  
+  # what does this code do? idk
+  #
+  # mutate (delay_sooner = rep(c(rep(0, 15), 12, 0, 0, 0), length(unique(ResponseId))),
+  #         delay_later  = rep(c(rep(12, 15), 24, 24, 12, 12),length(unique(ResponseId))),
+  #         amount_sooner = rep(c(rep(500, 10), 
+  #                               rep(5000, 5),
+  #                               rep(500, 4)), length(unique(ResponseId)))) %>%
+  
+  mutate (amount_later = case_when(
+    question == "Q1" | question == "Q2" ~ 550,
+    question == "Q1_now_1" | question == "Q2_wait_1" ~ 600,
+    question == "Q1_now_2" | question == "Q2_wait_2" ~ 750,
+    question == "Q1_wait_1" | question == "Q2_now_1"~ 510,
+    question == "Q1_wait_2" | question == "Q2_now_2"~ 505,
+    # question == "Gain5500" ~ 5500,
+    # question == "Gain6000" ~ 6000,
+    # question == "Gain7500" ~ 7500,
+    # question == "Gain5100" ~ 5100,
+    # question == "Gain5050" ~ 5050,
+    question == "Common_difference" ~ amount_later16,
+    question == "Subadditivity" ~ amount_later17,
+    question == "Delay_speedup_1" ~ amount_later18,
+    question == "Delay_speedup_2" ~ amount_later19
+  )) %>%
+  
+  
+  mutate (question = paste("Q",rep(1:ncol(select(data, Gain550:"Delay_speedup_2")), nrow(dat)), sep ="")) %>%
+  mutate (question_num = as.numeric(gsub("Q", "", question))) %>%
+  
+  mutate ( block = case_when(
+    question_num < 6 ~ "block1",
+    question_num >= 6 & question_num < 11 ~ "block2",
+    question_num >= 11 & question_num < 16 ~ "block3",
+    question_num == 16 ~ "anom1",
+    question_num == 17 ~ "anom2",
+    question_num == 18 ~ "anom3",
+    question_num == 19 ~ "anom3",
+  )) %>% 
+  
+  mutate (choice = case_when(
+    is.na(value) ~ NA_real_,
+    str_detect(value, "500 right now") ~ 0,
+    str_detect(value, "5000 right now") ~ 0,
+    str_detect(value, "5500 in 12 months") ~ 1,
+    str_detect(value, "7500 in 12 months") ~ 1,
+    str_detect(value, "500 in 12 months") ~ 0,
+    str_detect(value, "Reduce") ~ 0,
+    TRUE  ~ 1
+  ))
 ```
 
 ## EDA
@@ -438,8 +534,7 @@ ggplot(data_clean, aes(Fin_wellbeing, fill = Family_fin_wellbeing)) +
 ggplot(data_clean, aes(Fin_wellbeing, fill = Family_fin_wellbeing)) +
   geom_bar() +
   labs(title = "Financial Wellbeing") +
-
-  theme_bw() +
+  theme_cleveland() +
   theme(plot.title = element_text(hjust = 0.5, size = 14, face = "bold", family = "mono"),
         axis.title = element_blank(),
         panel.grid.major = element_line(),
@@ -453,7 +548,7 @@ ggplot(data_clean, aes(Fin_wellbeing, fill = Family_fin_wellbeing)) +
 ggplot(data_clean, aes(x = score, fill = Gender)) +
   geom_bar() +
   labs(title = "Score_v1 dist") +
-  theme_bw() +
+  bbc_style() +
   theme(plot.title = element_text(hjust = 0.5, size = 14, face = "bold", family = "mono"),
         axis.title = element_blank(),
         panel.grid.major = element_line(),
@@ -489,4 +584,10 @@ ggplot(data_clean, aes(x = Spend_3200, fill = as.factor(score))) +
         axis.text = element_text(size = 10, family = "mono"),
         axis.text.x = element_text(angle = 45, hjust = 1),
         plot.caption = element_text(face = "bold", family = "mono"))
+```
+
+## Analysis
+
+```{r}
+mod1 <- lm(score ~ Risk_preference + data_clean$ + Gender + 
 ```
