@@ -32,7 +32,9 @@ packages <- c("lattice",
               "ggthemes",
               "gtsummary",
               "hrbrthemes",
-              "scales")
+              "scales",
+              "stargazer",
+              "fastDummies")
 
 install_missing_packages <- function(package) {
   if (!require(package, character.only = TRUE)) {
@@ -439,20 +441,6 @@ summary_table <- data_clean[,c(18:24)] %>%
 # Print the summary table
 summary_table
 ```
-
-```{r}
-data_media <- data_clean[, c(37:59)] %>% 
-  mutate(fast_news = case_when(
-    News_frequence %in% c("5_times", "10_times", "10+") & (instagram == 1 | tiktok == 1 | telegram == 1) ~ 1,
-    TRUE ~ 0)) %>% 
-  mutate(slow_news = case_when(
-    News_frequence %in% c("never", "1_time") & (twitter == 1 | facebook == 1) ~ 1,
-    TRUE ~ 0))
-
-
-```
-
-
 ```{r}
 ## We estimate the anomalies rates for the five anomalies (present bias = presbias; absolute magnitude = absolmag, gain-loss asymmetry = gainloss; delay-speedup = delayspeed; subadditivity = subaddit). 
 ## We use answers to the three baseline sets of questions plus the answers to the common difference, subadditivity, and delay-speedup items to compute the temporal discount scores.
@@ -469,15 +457,74 @@ data_clean$score_gains <- rowSums(data_clean[, c("gain", "gain_now_1", "gain_now
 data_clean$score_losses <- rowSums(data_clean[, c("pay", "pay_later_1", "pay_later_2", "pay_now_1", "pay_now_2")], na.rm = TRUE)
 ```
 
-## Summary Stats
 
 ```{r}
-summary_stats_1 <- data_clean %>%
-  dplyr::mutate_if(is.character, factor) %>%
-  dplyr::mutate_if(is.numeric, factor, levels = 1:5, labels ) %>%
-  drop_na() %>%
-  as.data.frame()
+data_clean <- data_clean %>% 
+  mutate(fast_news = case_when(
+    News_frequence %in% c("5_times", "10_times", "10+") & (instagram == 1 | tiktok == 1 | telegram == 1) ~ 1,
+    TRUE ~ 0)) %>% 
+  mutate(slow_news = case_when(
+    News_frequence %in% c("never", "1_time") & (twitter == 1 | facebook == 1) ~ 1,
+    TRUE ~ 0))
+
+
 ```
+
+```{r}
+data_full <- data_clean[, c(16:33, 35, 36, 49:59)] %>% 
+  na.omit()
+data_full_cat <-  dummy_cols(data_full, 
+           select_columns = c("Spend_3200",
+                              "Time_vs_Money",
+                              "Fin_expectation", 
+                              "Income",
+                              "Fin_wellbeing",   
+                              "Debts",
+                              "Family_fin_wellbeing",
+                              # "birthyear", 
+                              "Gender",      
+                              "EducationCompleted",
+                              "Employment",
+                              "region_now", 
+                              "region_before",
+                              "News_frequence"), remove_selected_columns = T)
+
+# library(haven)
+# library(tidyverse)
+# library(glmnet)
+# library(plm)
+# library(pls)
+# library(modelr)
+library(leaps)
+
+
+regfit.full <- regsubsets(score ~ ., data_full_cat, nvmax = 50, really.big = T, method = "backward")
+reg.summary <- summary(regfit.full)
+```
+
+```{r}
+plot(reg.summary$rss, xlab = "Number of Variables",
+     ylab = "RSS", type = "l")
+plot(reg.summary$adjr2, xlab = "Number of Variables",
+     ylab = "Adjusted RSq", type = "l")
+plot(reg.summary$cp, xlab = "Number of Variables",
+     ylab = "Cp", type = "l")
+plot(reg.summary$bic, xlab = "Number of Variables",
+     ylab = "BIC", type = "l")
+```
+
+```{r}
+plot(regfit.full, scale = "r2")
+plot(regfit.full, scale = "adjr2")
+plot(regfit.full, scale = "Cp")
+plot(regfit.full, scale = "bic")
+```
+```{r}
+reg.summary
+```
+
+## Summary Stats
+
 
 
 ## EDA
@@ -538,5 +585,8 @@ ggplot(data_clean, aes(x = Spend_3200, fill = as.factor(score))) +
 ## Analysis
 
 ```{r}
-mod1 <- lm(score ~ data_clean$ + Gender + 
+
+data_full_cat <- na.omit(data_full_cat)
+mod1 <- lm(score ~ Property_damage + Bombing + Robbery + Occupied_territory + Emotional_damage + Physical_damage + Forced_relocation + whatsapp + instagram + viber + telegram + twitter + facebook + tiktok + score + Spend_3200_debts + Spend_3200_savings + Spend_3200_investment + Spend_3200_leisure + Time_vs_Money_additional_holiday_later + Time_vs_Money_additional_salary_later + Time_vs_Money_additional_holiday_now + Time_vs_Money_additional_salary_now + Fin_expectation_worse + Fin_expectation_better + Fin_expectation_much_worse + Fin_expectation_much_better + Fin_expectation_same + Income_inc_5k + Income_inc_15k + Income_inc_20k + Income_inc_10k + Income_inc_20k+ + Income_inc_1k + Fin_wellbeing_worse + Fin_wellbeing_better + Fin_wellbeing_same + Fin_wellbeing_much_worse + Fin_wellbeing_much_better + Debts_pay_percent + Debts_pay_bigger_half + Debts_pay_min_ammount + Debts_pay_all + Debts_never + Family_fin_wellbeing_poor + `Family_fin_wellbeing_high-mid` + Family_fin_wellbeing_wealthy + `Family_fin_wellbeing_low-mid` + Family_fin_wellbeing_mid + Gender_0 + Gender_1 + EducationCompleted_Undergrad_Grad + EducationCompleted_PhD + EducationCompleted_Secondary_educ + EducationCompleted_Technical_educ + `Employment_Not in paid employment (looking)` + `Employment_Not in paid employment (personal reasons)` + `Employment_Unemployed (not looking)` + `Employment_Employed part-time` + `Employment_Employed full-time` + Employment_Student + region_now_Dnipropetrovsk + region_now_Abroad + region_now_Zaporizhia + `region_now_Ivano-Frankivsk` + region_now_Kyiv + region_now_Lviv + `region_now_Kyiv City` + region_now_Odesa + region_now_Poltava + region_now_Khmelnytskyi + region_now_Cherkasy + region_now_Chernihiv + region_before_Dnipropetrovsk + region_before_Abroad + region_before_Zaporizhia + region_before_Kyiv + region_before_Lviv + `region_before_Kyiv City` + region_before_Odesa + region_before_Poltava + region_before_Khmelnytskyi + region_before_Cherkasy + region_before_Chernihiv + News_frequence_1_time + News_frequence_5_times + News_frequence_10_times + `News_frequence_10+` + News_frequence_never, data = data_full_cat)
+summary(mod1, type = "text")
 ```
