@@ -38,7 +38,9 @@ library(hrbrthemes)
 library(scales)
 library(stargazer)
 library(fastDummies)
-
+library(huxtable)
+library(jtools)
+library(AER)
 ```
 
 
@@ -106,7 +108,7 @@ colnames(data) <- colnames
 data_clean <- data %>%
   
 # 0 (always prefer delayed gains or earlier losses) 
-# 15 (always prefer immediate gains or delayed losses).
+# 1 (always prefer immediate gains or delayed losses).
   
   mutate(gain = case_when(
     str_detect(Q1, "Отримати 1600 грн прямо зараз") ~ 1,
@@ -150,31 +152,57 @@ data_clean <- data %>%
   
   ### ISSUE (HOW TO GO ABOUT THESE QUESTIONS)
   
-  mutate(gain_over_time = case_when(
-    str_detect(Q3_gain_time, "Отримати 1600 грн прямо зараз") ~ 1600,
-    str_detect(Q3_gain_time, "Отримати 2000 грн за 3 місяці") ~ 1600,
-    str_detect(Q3_gain_time, "Отримати 2400 грн за 6 місяців") ~ 2400,
-    str_detect(Q3_gain_time, "Отримати 2800 грн за 9 місяців") ~ 2800,
-    str_detect(Q3_gain_time, "Отримати 3200 грн за 12 місяців") ~ 3200)) %>%
+  # mutate(gain_over_time = case_when(
+  #   str_detect(Q3_gain_time, "Отримати 1600 грн прямо зараз") ~ 1600,
+  #   str_detect(Q3_gain_time, "Отримати 2000 грн за 3 місяці") ~ 1600,
+  #   str_detect(Q3_gain_time, "Отримати 2400 грн за 6 місяців") ~ 2400,
+  #   str_detect(Q3_gain_time, "Отримати 2800 грн за 9 місяців") ~ 2800,
+  #   str_detect(Q3_gain_time, "Отримати 3200 грн за 12 місяців") ~ 3200)) %>%
+  # 
+  # mutate(pay_over_time = case_when(
+  #   str_detect(Q4_loss_time, "Заплатити 1600 грн прямо зараз") ~ -1600,
+  #   str_detect(Q4_loss_time, "Заплатити 2000 грн за 3 місяців") ~ -2000,
+  #   str_detect(Q4_loss_time, "Заплатити 2400 грн за 6 місяців") ~ -2400,
+  #   str_detect(Q4_loss_time, "Заплатити 2800 грн за 9 місяців") ~ -2800,
+  #   str_detect(Q4_loss_time, "Заплатити 3200 грн за 12 місяців") ~ -3200)) %>%
+  
+    mutate(gain_over_time = case_when(
+    str_detect(Q3_gain_time, "Отримати 1600 грн прямо зараз") ~ 1,
+    str_detect(Q3_gain_time, "Отримати 2000 грн за 3 місяці") ~ 0,
+    str_detect(Q3_gain_time, "Отримати 2400 грн за 6 місяців") ~ 0,
+    str_detect(Q3_gain_time, "Отримати 2800 грн за 9 місяців") ~ 0,
+    str_detect(Q3_gain_time, "Отримати 3200 грн за 12 місяців") ~ 0)) %>%
   
   mutate(pay_over_time = case_when(
-    str_detect(Q4_loss_time, "Заплатити 1600 грн прямо зараз") ~ -1600,
-    str_detect(Q4_loss_time, "Заплатити 2000 грн за 3 місяців") ~ -2000,
-    str_detect(Q4_loss_time, "Заплатити 2400 грн за 6 місяців") ~ -2400,
-    str_detect(Q4_loss_time, "Заплатити 2800 грн за 9 місяців") ~ -2800,
-    str_detect(Q4_loss_time, "Заплатити 3200 грн за 12 місяців") ~ -3200)) %>%
+    str_detect(Q4_loss_time, "Заплатити 1600 грн прямо зараз") ~ 0,
+    str_detect(Q4_loss_time, "Заплатити 2000 грн за 3 місяців") ~ 1,
+    str_detect(Q4_loss_time, "Заплатити 2400 грн за 6 місяців") ~ 1,
+    str_detect(Q4_loss_time, "Заплатити 2800 грн за 9 місяців") ~ 1,
+    str_detect(Q4_loss_time, "Заплатити 3200 грн за 12 місяців") ~ 1)) %>%
   
-  mutate(Framing_gain = case_when(
-    str_detect(Q5_framing, "Отримати 1600 грн прямо зараз") ~ 1600,
-    str_detect(Q5_framing, "Зачекати 3 місяці та отримати 1600 грн плюс додаткові 400 грн") ~ 2000,
-    str_detect(Q5_framing, "Зачекати 6 місяців та отримати 1600 грн плюс додаткові 800 грн") ~ 2400,
-    str_detect(Q5_framing, "Зачекати 9 місяців та отримати 1600 грн плюс додаткові 1200 грн") ~ 2800,
-    str_detect(Q5_framing, "Зачекати 12 місяців та отримати 1600 грн плюс додаткові 1600 грн") ~ 3200)) %>% 
+  # mutate(Framing_gain = case_when(
+  #   str_detect(Q5_framing, "Отримати 1600 грн прямо зараз") ~ 1600,
+  #   str_detect(Q5_framing, "Зачекати 3 місяці та отримати 1600 грн плюс додаткові 400 грн") ~ 2000,
+  #   str_detect(Q5_framing, "Зачекати 6 місяців та отримати 1600 грн плюс додаткові 800 грн") ~ 2400,
+  #   str_detect(Q5_framing, "Зачекати 9 місяців та отримати 1600 грн плюс додаткові 1200 грн") ~ 2800,
+  #   str_detect(Q5_framing, "Зачекати 12 місяців та отримати 1600 грн плюс додаткові 1600 грн") ~ 3200)) %>% 
 
+  mutate(Framing_gain = case_when(
+    str_detect(Q5_framing, "Отримати 1600 грн прямо зараз") ~ 1,
+    str_detect(Q5_framing, "Зачекати 3 місяці та отримати 1600 грн плюс додаткові 400 грн") ~ 0,
+    str_detect(Q5_framing, "Зачекати 6 місяців та отримати 1600 грн плюс додаткові 800 грн") ~ 0,
+    str_detect(Q5_framing, "Зачекати 9 місяців та отримати 1600 грн плюс додаткові 1200 грн") ~ 0,
+    str_detect(Q5_framing, "Зачекати 12 місяців та отримати 1600 грн плюс додаткові 1600 грн") ~ 0)) %>% 
+  
+  # mutate(Magnitude = case_when(
+  #   str_detect(Q6_magnitude, "3200 грн прямо зараз") ~ 3200,
+  #   str_detect(Q6_magnitude, "1600 грн на місяць протягом 3 місяців") ~ 4800,
+  #   str_detect(Q6_magnitude, "9600 грн за 6 місяців") ~ 9600)) %>% 
+  
   mutate(Magnitude = case_when(
-    str_detect(Q6_magnitude, "3200 грн прямо зараз") ~ 3200,
-    str_detect(Q6_magnitude, "1600 грн на місяць протягом 3 місяців") ~ 4800,
-    str_detect(Q6_magnitude, "9600 грн за 6 місяців") ~ 9600)) %>% 
+    str_detect(Q6_magnitude, "3200 грн прямо зараз") ~ 1,
+    str_detect(Q6_magnitude, "1600 грн на місяць протягом 3 місяців") ~ 0,
+    str_detect(Q6_magnitude, "9600 грн за 6 місяців") ~ 0)) %>% 
 
   #######################################################################
   
@@ -205,12 +233,12 @@ data_clean <- data %>%
                                     "much_better" = "Буде набагато краще, ніж зараз")) %>%
   
   # mutate(Income = fct_recode(Q11_income, 
-  #                                   "inc_1k" = "Менше 1000",
-  #                                   "inc_5k" = "1000 - 5000 гривень",
-  #                                   "inc_10k" = "5000 - 10000 гривень",
-  #                                   "inc_15k" = "10000 - 15000 гривень",
-  #                                   "inc_20k" = "15000 - 20000 гривень",
-  #                                   "inc_20k+" = "Більше 20000 гривень")) %>%
+  #                                    "less_1k" = "Менше 1000",
+  #                                    "1_to_5k" = "1000 - 5000 гривень",
+  #                                    "5_to_10k" = "5000 - 10000 гривень",
+  #                                    "10_to_15k" = "10000 - 15000 гривень",
+  #                                    "15_to_20k" = "15000 - 20000 гривень",
+  #                                    "more_20k" = "Більше 20000 гривень")) %>%
   
   
   # 1 - those with income of over 20k, 0 - less
@@ -310,80 +338,80 @@ data_clean <- data %>%
     str_detect(Q18_relocation, "Так") ~ 1,
     TRUE ~ NA)) %>%
   
-  mutate(No_war_experience = case_when(
+  mutate(No_war_exper = case_when(
     str_detect(Q18_nothing, "Ні") ~ 0,
     str_detect(Q18_nothing, "Так") ~ 1,
     TRUE ~ NA)) %>%
   
   # mutate(region_now = fct_recode(Q19_living,
-  #                    "Abroad" = "За кордоном",
-  #                    "Kyiv City" = "Місто Київ",
-  #                    "Vinnytsia" = "Вінницька",
-  #                    "Volyn" = "Волинська",
-  #                    "Dnipropetrovsk" = "Дніпропетровська",
-  #                    "Donetsk" = "Донецька",
-  #                    "Zhytomyr" = "Житомирська",
-  #                    "Zakarpattia" = "Закарпатська",
-  #                    "Zaporizhia" = "Запорізька",
-  #                    "Ivano-Frankivsk" = "Івано-Франківська",
-  #                    "Kyiv" = "Київська",
-  #                    "Kirovohrad" = "Кіровоградська",
-  #                    "Luhansk" = "Луганська",
-  #                    "Lviv" = "Львівська",
-  #                    "Mykolaiv" = "Миколаївська",
-  #                    "Odesa" = "Одеська",
-  #                    "Poltava" = "Полтавська",
-  #                    "Rivne" = "Рівненська",
-  #                    "Sumy" = "Сумська",
-  #                    "Ternopil" = "Тернопільська",
-  #                    "Kharkiv" = "Харківська",
-  #                    "Kherson" = "Херсонська",
-  #                    "Khmelnytskyi" = "Хмельницька",
-  #                    "Cherkasy" = "Черкаська",
-  #                    "Chernivtsi" = "Чернівецька",
-  #                    "Chernihiv" = "Чернігівська",
-  #                    "Crimea" = "Автономна Республіка Крим",
-  #                    "Sevastopol" = "Севастополь")) %>% 
-  # 
+  #                     "Abroad" = "За кордоном",
+  #                     "Kyiv City" = "Місто Київ",
+  #                     "Vinnytsia" = "Вінницька",
+  #                     "Volyn" = "Волинська",
+  #                     "Dnipropetrovsk" = "Дніпропетровська",
+  #                     "Donetsk" = "Донецька",
+  #                     "Zhytomyr" = "Житомирська",
+  #                     "Zakarpattia" = "Закарпатська",
+  #                     "Zaporizhia" = "Запорізька",
+  #                     "Ivano-Frankivsk" = "Івано-Франківська",
+  #                     "Kyiv" = "Київська",
+  #                     "Kirovohrad" = "Кіровоградська",
+  #                     "Luhansk" = "Луганська",
+  #                     "Lviv" = "Львівська",
+  #                     "Mykolaiv" = "Миколаївська",
+  #                     "Odesa" = "Одеська",
+  #                     "Poltava" = "Полтавська",
+  #                     "Rivne" = "Рівненська",
+  #                     "Sumy" = "Сумська",
+  #                     "Ternopil" = "Тернопільська",
+  #                     "Kharkiv" = "Харківська",
+  #                     "Kherson" = "Херсонська",
+  #                     "Khmelnytskyi" = "Хмельницька",
+  #                     "Cherkasy" = "Черкаська",
+  #                     "Chernivtsi" = "Чернівецька",
+  #                     "Chernihiv" = "Чернігівська",
+  #                     "Crimea" = "Автономна Республіка Крим",
+  #                     "Sevastopol" = "Севастополь")) %>% 
+  #  
   # mutate(region_before = fct_recode(Q20_living_before,
-  #                    "Abroad" = "За кордоном",
-  #                    "Kyiv City" = "Місто Київ",
-  #                    "Vinnytsia" = "Вінницька",
-  #                    "Volyn" = "Волинська",
-  #                    "Dnipropetrovsk" = "Дніпропетровська",
-  #                    "Donetsk" = "Донецька",
-  #                    "Zhytomyr" = "Житомирська",
-  #                    "Zakarpattia" = "Закарпатська",
-  #                    "Zaporizhia" = "Запорізька",
-  #                    "Ivano-Frankivsk" = "Івано-Франківська",
-  #                    "Kyiv" = "Київська",
-  #                    "Kirovohrad" = "Кіровоградська",
-  #                    "Luhansk" = "Луганська",
-  #                    "Lviv" = "Львівська",
-  #                    "Mykolaiv" = "Миколаївська",
-  #                    "Odesa" = "Одеська",
-  #                    "Poltava" = "Полтавська",
-  #                    "Rivne" = "Рівненська",
-  #                    "Sumy" = "Сумська",
-  #                    "Ternopil" = "Тернопільська",
-  #                    "Kharkiv" = "Харківська",
-  #                    "Kherson" = "Херсонська",
-  #                    "Khmelnytskyi" = "Хмельницька",
-  #                    "Cherkasy" = "Черкаська",
-  #                    "Chernivtsi" = "Чернівецька",
-  #                    "Chernihiv" = "Чернігівська",
-  #                    "Crimea" = "Автономна Республіка Крим",
-  #                    "Sevastopol" = "Севастополь")) %>%
+  #                     "Abroad" = "За кордоном",
+  #                     "Kyiv City" = "Місто Київ",
+  #                     "Vinnytsia" = "Вінницька",
+  #                     "Volyn" = "Волинська",
+  #                     "Dnipropetrovsk" = "Дніпропетровська",
+  #                     "Donetsk" = "Донецька",
+  #                     "Zhytomyr" = "Житомирська",
+  #                     "Zakarpattia" = "Закарпатська",
+  #                     "Zaporizhia" = "Запорізька",
+  #                     "Ivano-Frankivsk" = "Івано-Франківська",
+  #                     "Kyiv" = "Київська",
+  #                     "Kirovohrad" = "Кіровоградська",
+  #                     "Luhansk" = "Луганська",
+  #                     "Lviv" = "Львівська",
+  #                     "Mykolaiv" = "Миколаївська",
+  #                     "Odesa" = "Одеська",
+  #                     "Poltava" = "Полтавська",
+  #                     "Rivne" = "Рівненська",
+  #                     "Sumy" = "Сумська",
+  #                     "Ternopil" = "Тернопільська",
+  #                     "Kharkiv" = "Харківська",
+  #                     "Kherson" = "Херсонська",
+  #                     "Khmelnytskyi" = "Хмельницька",
+  #                     "Cherkasy" = "Черкаська",
+  #                     "Chernivtsi" = "Чернівецька",
+  #                     "Chernihiv" = "Чернігівська",
+  #                     "Crimea" = "Автономна Республіка Крим",
+  #                     "Sevastopol" = "Севастополь")) %>%
   
   mutate(region_now = case_when(
-    str_detect(Q19_living, "Місто Київ") ~ 1,
-    str_detect(Q19_living, "Київська") ~ 1,
-    TRUE ~ 0)) %>% 
-  
-    mutate(region_before = case_when(
-    str_detect(Q20_living_before, "Місто Київ") ~ 1,
-    str_detect(Q20_living_before, "Київська") ~ 1,
-    TRUE ~ 0)) %>% 
+     str_detect(Q19_living, "Місто Київ") ~ 1,
+     str_detect(Q19_living, "Київська") ~ 1,
+     TRUE ~ 0)) %>% 
+   
+  mutate(region_before = case_when(
+     str_detect(Q20_living_before, "Місто Київ") ~ 1,
+     str_detect(Q20_living_before, "Київська") ~ 1,
+     TRUE ~ 0)) %>% 
 
 
   mutate(info_family = case_when(
@@ -458,15 +486,18 @@ data_clean <- data_clean[,-c(1:45)]
 ### Checking for sus responses
 
 ```{r, warning=FALSE, message=FALSE, echo=FALSE, output=FALSE}
-# Create a summary table
-summary_table <- data_clean[,c(18:24)] %>%
-  tbl_summary(by = Gender) %>%  # replace 'group_column' with the actual grouping column
-  add_n() %>% 
-  modify_header(label = "**Variable**") %>% # update the column header
-  bold_labels()
-
-# Print the summary table
+#Create a summary table
+summary_table <- data_clean[,20] %>%
+   tbl_summary() %>% 
+   modify_header(label = "Financial Wellbeing after 24th") %>% 
+   bold_labels()
+ 
+ # Print the summary table
 summary_table
+ 
+summary_table %>%
+   as_gt() %>%
+   gt::gtsave(filename = "fin.png")
 ```
 
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
@@ -478,7 +509,7 @@ summary_table
 
 # data_clean$score_v1 <- rowMeans(data_clean[, c("gain", "gain_now_1", "gain_now_2", "gain_later_1", "gain_later_2", "pay", "pay_later_1", "pay_later_2", "pay_now_1", "pay_now_2")], na.rm = TRUE)
 
-data_clean$score <- rowSums(data_clean[, c("gain", "gain_now_1", "gain_now_2", "gain_later_1", "gain_later_2", "pay", "pay_later_1", "pay_later_2", "pay_now_1", "pay_now_2")], na.rm = TRUE)
+data_clean$score <- rowSums(data_clean[, c("gain", "gain_now_1", "gain_now_2", "gain_later_1", "gain_later_2", "pay", "pay_later_1", "pay_later_2", "pay_now_1", "pay_now_2", "gain_over_time", "pay_over_time", "Framing_gain", "Magnitude")], na.rm = TRUE)
 
 data_clean$score_gains <- rowSums(data_clean[, c("gain", "gain_now_1", "gain_now_2", "gain_later_1", "gain_later_2")], na.rm = TRUE)
 
@@ -501,7 +532,8 @@ data_clean <- data_clean %>%
          Occupied_territory = as.numeric(Occupied_territory),
          Emotional_damage = as.numeric(Emotional_damage),
          Physical_damage = as.numeric(Physical_damage),
-         Forced_relocation = as.numeric(Forced_relocation))
+         Forced_relocation = as.numeric(Forced_relocation)) %>% 
+  mutate(score_st = c(scale(score)))
 
 data_clean$war <- rowSums(data_clean[, c(27:33)], na.rm=T)
 ```
@@ -509,116 +541,151 @@ data_clean$war <- rowSums(data_clean[, c(27:33)], na.rm=T)
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
 #rm(data_full)
 
-data_full <- data_clean[, c(15, 18:26, 34, 35, 36, 49, 57, 60, 62)] %>% 
+data_full <- data_clean[, c(18, 19, 21, 23:26, 34, 35, 36, 57, 60, 61, 63)] %>% 
   na.omit()
 data_full_cat <-  dummy_cols(data_full, 
-           select_columns = c("Fin_expectation", 
-                              "Fin_wellbeing",   
-                              "Family_fin_wellbeing",
-                              # "birthyear", 
-                              "EducationCompleted",
-                              "News_frequence"), remove_selected_columns = T)
+           select_columns = c("Fin_expectation",
+                              "EducationCompleted"), remove_selected_columns = T)
 
 ```
 
 ```{r}
-library(leaps)
-
-regfit.full <- regsubsets(score ~ ., data_full_cat, nvmax = 10, really.big = T, method = "backward")
-reg.summary <- summary(regfit.full)
-```
-
-```{r, warning=FALSE, message=FALSE, echo=FALSE}
-plot(reg.summary$rss, xlab = "Number of Variables",
-     ylab = "RSS", type = "l")
-plot(reg.summary$adjr2, xlab = "Number of Variables",
-     ylab = "Adjusted RSq", type = "l")
-plot(reg.summary$cp, xlab = "Number of Variables",
-     ylab = "Cp", type = "l")
-plot(reg.summary$bic, xlab = "Number of Variables",
-     ylab = "BIC", type = "l")
-```
-
-```{r, warning=FALSE, message=FALSE, echo=FALSE}
-plot(regfit.full, scale = "r2")
-plot(regfit.full, scale = "adjr2")
-plot(regfit.full, scale = "Cp")
-plot(regfit.full, scale = "bic")
-```
-
-```{r, warning=FALSE, message=FALSE, echo=FALSE}
-reg.summary
+# library(leaps)
+# 
+# regfit.full <- regsubsets(score ~ ., data_full_cat, nvmax = 10, really.big = T, method = "backward")
+# reg.summary <- summary(regfit.full)
+# 
+# plot(reg.summary$rss, xlab = "Number of Variables",
+#      ylab = "RSS", type = "l")
+# plot(reg.summary$adjr2, xlab = "Number of Variables",
+#      ylab = "Adjusted RSq", type = "l")
+# plot(reg.summary$cp, xlab = "Number of Variables",
+#      ylab = "Cp", type = "l")
+# plot(reg.summary$bic, xlab = "Number of Variables",
+#      ylab = "BIC", type = "l")
+# 
+# plot(regfit.full, scale = "r2")
+# plot(regfit.full, scale = "adjr2")
+# plot(regfit.full, scale = "Cp")
+# plot(regfit.full, scale = "bic")
+# 
+# reg.summary
 ```
 
 
 ## EDA
 
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
-ggplot(data_clean, aes(Income)) +
+g2 <- ggplot(data_clean, aes(Income, fill = Gender)) +
   geom_bar() +
-    labs(title = "Income distribution") +
-  theme_fivethirtyeight()
+    labs(title = "Income",
+         x = "Monthly income",
+         y = "# of responders") +
+  geom_label(aes(x = -0.25, y = 10, 
+                 label = "Under 20000 UAH"), 
+                           hjust = 0, 
+                           vjust = 0.5, 
+                           colour = "#555555", 
+                           fill = "white", 
+                           label.size = NA, 
+                           family="Garamond", 
+                           size = 5) +
+    geom_label(aes(x = 0.75, y = 10, 
+                 label = "Over 20000 UAH"), 
+                           hjust = 0, 
+                           vjust = 0.5, 
+                           colour = "#555555", 
+                           fill = "white", 
+                           label.size = NA, 
+                           family="Garamond", 
+                           size = 5) +
+  geom_text(stat = 'count', aes(label = ..count..), vjust = -0.5, color = "black", size = 5, family = "Garamond") +
+  theme_classic() +
+  theme(plot.title = element_text(family = "Garamond", hjust = 0.5),
+        plot.caption = element_text(family = "Garamond"),
+        axis.text = element_text(family = "Garamond"),
+        axis.title = element_text(family = "Garamond"),
+        axis.text.x = element_blank())
+
+data_clean$EducationCompleted <- factor(data_clean$EducationCompleted, levels = c("Secondary_educ", "Technical_educ", "Undergrad_Grad", "PhD"))
+
+g1 <- ggplot(data_clean, aes(x = EducationCompleted, fill = Gender))  +
+  geom_bar() +
+    labs(title = "Completed education",
+         y = "# of responders") +
+  geom_text(stat = 'count', aes(label = ..count..), vjust = -0.5, color = "black", size = 5, family = "Garamond") +
+  theme_classic() +
+  theme(plot.title = element_text(family = "Garamond", hjust = 0.5),
+        plot.caption = element_text(family = "Garamond"),
+        axis.text = element_text(family = "Garamond"),
+        axis.title.y = element_text(family = "Garamond"),
+        axis.title.x = element_blank())
+
+gridExtra::grid.arrange(g1,g2, ncol = 2)
 ```
 
-
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
-ggplot(data_clean, aes(Fin_wellbeing, fill = Family_fin_wellbeing)) +
-  geom_bar() +
-  labs(title = "Financial Wellbeing") +
-  theme_fivethirtyeight()
-```
-
-```{r, warning=FALSE, message=FALSE, echo=FALSE}
-g1 <- ggplot(data_clean, aes(x = score, fill = Gender)) +
-  geom_bar(position = "identity") +
-  labs(title = "Score_overal") +
-  theme_fivethirtyeight()
-
-g2 <- ggplot(data_clean, aes(x = score_gains, fill = Gender)) +
-  geom_bar(position = "identity") +
-  labs(title = "Score_gains") +
-  theme_fivethirtyeight()
-
-g3 <- ggplot(data_clean, aes(x = score_losses, fill = Gender)) +
-  geom_bar(position = "identity") +
-  labs(title = "Score_losses") +
-  theme_fivethirtyeight()
-
 #|warning: false
-gridExtra::grid.arrange(g1,g2,g3, ncol = 3)
-```
-
-```{r, warning=FALSE, message=FALSE, echo=FALSE}
-ggplot(data_clean, aes(Fin_expectation, fill = Fin_wellbeing)) +
-  geom_bar() +
-  labs(title = "Expectation") +
-  theme_fivethirtyeight()
-```
-
-```{r, warning=FALSE, message=FALSE, echo=FALSE}
 ggplot(data_clean, aes(x = score)) +
-  geom_bar() +
-  facet_wrap(~Spend_3200) +
-  labs(title = "How would you spend 3200?") +
-  theme_fivethirtyeight()
+  geom_bar(position = "identity") +
+  scale_x_continuous(breaks = seq(0, 10, 1), labels = seq(0, 10, 1)) +
+  labs(title = "Overal score",
+       x =  "Score",
+       y = "# of responders") +
+  geom_curve(aes(x = 4, y = 16, xend = 1, yend = 14),
+             colour = "#555555", 
+             size=1.5, 
+             curvature = -0.2,
+             arrow = arrow(length = unit(0.03, "npc"))) +
+  geom_label(aes(x = 3, y = 17, 
+                 label = "Most people preferred delayed gains 
+                 and immediate losses"), 
+                           hjust = 0, 
+                           vjust = 0.5, 
+                           colour = "#555555", 
+                           fill = "white", 
+                           label.size = NA, 
+                           family="Garamond", 
+                           size = 5) +
+  theme_classic() +
+  theme(plot.title = element_text(family = "Garamond", hjust = 0.5),
+        axis.text = element_text(family = "Garamond"),
+        axis.title = element_text(family = "Garamond"))
 ```
 
-```{r, warning=FALSE, message=FALSE, echo=FALSE}
-ggplot(data_clean, aes(x = News_frequence)) +
-  geom_bar() +
-  labs(title = "Як часто ви переглядаєте новини щодня?") +
-  theme_fivethirtyeight()
-```
 
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
-#|message: false
-#|warning: false
-ggplot(data_clean, aes(x = war)) +
+g3 <- ggplot(data_clean, aes(x = region_before)) +
   geom_bar() +
-  facet_wrap(~Fin_expectation) +
-  labs(title = "Exposure to violence and expectations") +
-  theme_fivethirtyeight()
+  labs(title = "Where did you live before Feb 24th 2022?",
+       y = "# of respondents") +
+  coord_flip() +
+   geom_text(stat = 'count', aes(label = ..count..), hjust = -0.5, color = "black", size = 5, family = "Garamond") +
+  theme_classic() +
+  theme(plot.title = element_text(family = "Garamond", hjust = 0.5, size = 20),
+        plot.caption = element_text(family = "Garamond"),
+        axis.text.y = element_text(family = "Garamond", size = 15),
+        axis.text.x = element_blank(),
+        axis.title.x = element_text(family = "Garamond"),
+        axis.title.y = element_blank())
+
+g4 <- ggplot(data_clean, aes(x = region_now)) +
+  geom_bar() +
+  labs(title = "Where do you currently live?",
+       y = "# of respondents") +
+  coord_flip() +
+   geom_text(stat = 'count', aes(label = ..count..), hjust = -.5, color = "black", size = 5, family = "Garamond") +
+  theme_classic() +
+  theme(plot.title = element_text(family = "Garamond", hjust = 0.5, size = 20),
+        plot.caption = element_text(family = "Garamond"),
+        axis.text.y = element_text(family = "Garamond", size = 15),
+        axis.text.x = element_blank(),
+        axis.title.x = element_text(family = "Garamond"),
+        axis.title.y = element_blank())
+
+gridExtra::grid.arrange(g3,g4, ncol = 2)
 ```
+
 
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
 ggplot(data_clean, aes(x = war)) +
@@ -628,11 +695,6 @@ ggplot(data_clean, aes(x = war)) +
   theme_fivethirtyeight()
 ```
 
-```{r, warning=FALSE, message=FALSE, echo=FALSE}
-ggplot(data_clean, aes(birthyear, No_war_experience)) +
-  geom_jitter() +
-  geom_smooth(method = "lm")
-```
 
 
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
@@ -657,8 +719,8 @@ ggplot(data_clean, aes(birthyear, No_war_experience)) +
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
 # colnames(data_full_cat)
 data_full_cat <- na.omit(data_full_cat)
-mod1 <- lm(score ~ ., data = data_full_cat)
-summary(mod1)
+mod <- lm(score ~ ., data = data_full_cat)
+stargazer(mod, type = "text")
 ```
 
 Відфільтрував датасет (no NAs) по зарплаті 20+ та 20-. No significance, окрім Fin_wellbeing_worse (<0.1) - це dummy (1 - фінансове положення з початку війни погіршилось)
@@ -673,10 +735,14 @@ data_poor <- data_full_cat %>%
 mod_rich <- lm(score ~ ., data_rich)
 mod_poor <- lm(score ~ ., data_poor)
 stargazer(mod_poor, mod_rich, 
-          header=FALSE, 
-          title="Rich vs Poor", 
+          header=FALSE,
+          column.labels = c("<20k UAH", "20+k UAH"),
           type='text', 
-          digits=2)
+          digits=3,
+          font.size = "normalsize",
+          align = TRUE,
+          omit.stat=c("f", "ser"),
+          column.sep.width = "-25pt")
 ```
 
 Відфільтрував датасет (no NAs) по працюючим/непрацюючим. Непрацюючих тільки 16... краще дивіться на працюючих. Є вже вплив Debts (<0.05) <- good
@@ -710,9 +776,9 @@ data_male <- data_full_cat %>%
 data_female <- data_full_cat %>% 
   filter(Gender == 1) 
 
-mod_female <- lm(score ~ ., data_female)
-mod_male <- lm(score ~ ., data_male)
-stargazer(mod_female, mod_male, 
+mod_f <- lm(score ~ ., data_female)
+mod_m <- lm(score ~ ., data_male)
+stargazer(mod_f, mod_m, 
           header=FALSE, 
           title="female vs male", 
           type='text', 
@@ -720,7 +786,7 @@ stargazer(mod_female, mod_male,
           font.size = "small",
           align = TRUE,
           omit.stat=c("f", "ser"),
-          column.sep.width = "-25pt")
+          no.space=TRUE)
 ```
 
 Відфільтрував датасет (no NAs) по тим хто ніколи не бере кредити. 
@@ -749,16 +815,88 @@ stargazer(mod_debts, mod_no_debts,
 
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
 library(PerformanceAnalytics)
-chart.Correlation(data_full_cat[,c(1:22)], histogram=F)
+chart.Correlation(data_full_cat[,c(1:3,5:12)], histogram=F)
+
+library(corrr)
+library(corrplot)
+
+
+correlation.matrix<-cor(data_full_cat[,c(1:3,5:12)]) 
+
+stargazer(correlation.matrix,title="Correlation Matrix")
 ```
 
 
 
 
+```{r}
+stargazer(mod, mod_f, mod_m, mod_emp, mod_unemp, mod_poor, mod_rich,
+          column.labels = c("Full model", "Female", "Male", "employed", "unemployed", "<20k UAH", "20+k UAH"),
+          covariate.labels = c("Income", "Debts", "Year of birth", "Gender", "Employment", "No war experience", "Living in Kyiv now", "Living in Kyiv before 24th", "Fast news", "Slow news", "War experience", "Expects worse", "Expects better", "Expects much worse", "Expects much better", "Expects the same", "Secondary education", "Technical education", "BSc or MSc", "PhD"),
+          header=FALSE, 
+          title="Regression results", 
+          type='text', 
+          digits=3,
+          style = "aer",
+          font.size = "small",
+          align = TRUE,
+          omit = c("Constant"),
+          omit.stat=c("f", "ser"),
+          no.space=TRUE)
+```
 
 
+```{r}
+data_tobit <- data_full_cat[, c(1:16)]
+mod_tobit <- tobit(score ~ ., left = 0, data = data_tobit)
+stargazer(mod_tobit,          
+          header=FALSE, 
+          title="Regression results", 
+          type='text', 
+          digits=3,
+          style = "aer",
+          font.size = "small",
+          align = TRUE,
+          omit = c("Constant"),
+          omit.stat=c("f", "ser"),
+          no.space=TRUE)
 
 
+data_t <- data_tobit %>% 
+  filter(score > 0)
+
+mod_tibit <- lm(score ~ ., data_t)
+stargazer(mod_tibit, mod_tobit, mod,          
+          header=FALSE, 
+          title="Regression results", 
+          type='text', 
+          digits=3,
+          style = "aer",
+          font.size = "small",
+          align = TRUE,
+          omit = c("Constant"),
+          omit.stat=c("f", "ser"),
+          no.space=TRUE)
+
+
+corrplot(cor(data_tobit))
+```
+
+
+```{r}
+stargazer(mod, mod_t,
+          covariate.labels = c("Income", "Debts", "Year of birth", "Gender", "Employment", "No war experience", "Living in Kyiv now", "Living in Kyiv before 24th", "Fast news", "Slow news", "War experience", "Expects worse", "Expects better", "Expects much worse", "Expects much better", "Expects the same", "Secondary education", "Technical education", "BSc or MSc", "PhD"),
+          header=FALSE, 
+          title="Regression results", 
+          type='text', 
+          digits=3,
+          style = "aer",
+          font.size = "small",
+          align = TRUE,
+          omit = c("Constant"),
+          omit.stat=c("f", "ser"),
+          no.space=TRUE)
+```
 
 
 
