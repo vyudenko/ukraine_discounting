@@ -1,0 +1,5 @@
+In this paper we are studying the effects of war and uncertainty it brings on intertemporal choices of Ukrainians in Ukraine and abroad. Drawing inspiration from paper by (Ruggeri et al. 2022), we adapt a questionnaire and methodology to our hypotheses, which test how different experiences of war, usage of social media, and perception of uncertainty affect financial decision-making. 
+73 participants took our survey, which consisted of Monetary Choice Questionnaire, financial wellbeing items, socio-demographic questions, sources of news, and uses of social media. Average participant is female, living in Kyiv, with completed BSc or higher, earning over 20000 UAH/month, preferring to delay gains and incur smaller immediate losses over bigger later. 
+ 
+We create an aggregate score for discounting by summing over the responder’s answers to the Monetary Choice Questionnaire, and use this score as our dependent variable in OLS regression. Similar approach is taken with regards to measuring experience of war and use of social media. 
+
