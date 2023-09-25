@@ -13,8 +13,6 @@ editor: visual
 
 # Setup
 
-
-
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
 # loading packages
 library(lattice)
@@ -42,7 +40,6 @@ library(huxtable)
 library(jtools)
 library(AER)
 ```
-
 
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
 # loading data
@@ -517,7 +514,6 @@ data_clean$score_losses <- rowSums(data_clean[, c("pay", "pay_later_1", "pay_lat
 
 ```
 
-
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
 data_clean <- data_clean %>% 
   mutate(fast_news = case_when(
@@ -571,7 +567,6 @@ data_full_cat <-  dummy_cols(data_full,
 # 
 # reg.summary
 ```
-
 
 ## EDA
 
@@ -653,7 +648,6 @@ ggplot(data_clean, aes(x = score)) +
         axis.title = element_text(family = "Garamond"))
 ```
 
-
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
 g3 <- ggplot(data_clean, aes(x = region_before)) +
   geom_bar() +
@@ -686,7 +680,6 @@ g4 <- ggplot(data_clean, aes(x = region_now)) +
 gridExtra::grid.arrange(g3,g4, ncol = 2)
 ```
 
-
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
 ggplot(data_clean, aes(x = war)) +
   geom_bar() +
@@ -694,8 +687,6 @@ ggplot(data_clean, aes(x = war)) +
   labs(title = "Exposure to violence and gender") +
   theme_fivethirtyeight()
 ```
-
-
 
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
 # g4 <- ggplot(data_clean, aes(x = Forced_relocation, fill = region_before)) +
@@ -713,7 +704,6 @@ ggplot(data_clean, aes(x = war)) +
 # gridExtra::grid.arrange(g4,g5, ncol = 2)
 ```
 
-
 ## Analysis
 
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
@@ -723,7 +713,8 @@ mod <- lm(score ~ ., data = data_full_cat)
 stargazer(mod, type = "text")
 ```
 
-Відфільтрував датасет (no NAs) по зарплаті 20+ та 20-. No significance, окрім Fin_wellbeing_worse (<0.1) - це dummy (1 - фінансове положення з початку війни погіршилось)
+Відфільтрував датасет (no NAs) по зарплаті 20+ та 20-.
+No significance, окрім Fin_wellbeing_worse (\<0.1) - це dummy (1 - фінансове положення з початку війни погіршилось)
 
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
 data_rich <- data_full_cat %>% 
@@ -745,7 +736,9 @@ stargazer(mod_poor, mod_rich,
           column.sep.width = "-25pt")
 ```
 
-Відфільтрував датасет (no NAs) по працюючим/непрацюючим. Непрацюючих тільки 16... краще дивіться на працюючих. Є вже вплив Debts (<0.05) <- good
+Відфільтрував датасет (no NAs) по працюючим/непрацюючим.
+Непрацюючих тільки 16... краще дивіться на працюючих.
+Є вже вплив Debts (\<0.05) \<- good
 
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
 data_emp <- data_full_cat %>% 
@@ -767,7 +760,9 @@ stargazer(mod_unemp, mod_emp,
           column.sep.width = "-25pt")
 ```
 
-Відфільтрував датасет (no NAs) по тим гендеру. Для жінок Debts є сігніфікант на 0.10, що є дуже сумно. Але це вже щось!
+Відфільтрував датасет (no NAs) по тим гендеру.
+Для жінок Debts є сігніфікант на 0.10, що є дуже сумно.
+Але це вже щось!
 
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
 data_male <- data_full_cat %>% 
@@ -789,7 +784,7 @@ stargazer(mod_f, mod_m,
           no.space=TRUE)
 ```
 
-Відфільтрував датасет (no NAs) по тим хто ніколи не бере кредити. 
+Відфільтрував датасет (no NAs) по тим хто ніколи не бере кредити.
 
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
 data_debts <- data_full_cat %>% 
@@ -811,7 +806,7 @@ stargazer(mod_debts, mod_no_debts,
           column.sep.width = "-25pt")
 ```
 
-Немає сильного зв*язку між змінними, як не кручу.
+Немає сильного зв\*язку між змінними, як не кручу.
 
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
 library(PerformanceAnalytics)
@@ -825,9 +820,6 @@ correlation.matrix<-cor(data_full_cat[,c(1:3,5:12)])
 
 stargazer(correlation.matrix,title="Correlation Matrix")
 ```
-
-
-
 
 ```{r}
 stargazer(mod, mod_f, mod_m, mod_emp, mod_unemp, mod_poor, mod_rich,
@@ -844,7 +836,6 @@ stargazer(mod, mod_f, mod_m, mod_emp, mod_unemp, mod_poor, mod_rich,
           omit.stat=c("f", "ser"),
           no.space=TRUE)
 ```
-
 
 ```{r}
 data_tobit <- data_full_cat[, c(1:16)]
@@ -882,7 +873,6 @@ stargazer(mod_tibit, mod_tobit, mod,
 corrplot(cor(data_tobit))
 ```
 
-
 ```{r}
 stargazer(mod, mod_t,
           covariate.labels = c("Income", "Debts", "Year of birth", "Gender", "Employment", "No war experience", "Living in Kyiv now", "Living in Kyiv before 24th", "Fast news", "Slow news", "War experience", "Expects worse", "Expects better", "Expects much worse", "Expects much better", "Expects the same", "Secondary education", "Technical education", "BSc or MSc", "PhD"),
@@ -897,19 +887,6 @@ stargazer(mod, mod_t,
           omit.stat=c("f", "ser"),
           no.space=TRUE)
 ```
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
 data_prospect <- data[, c(1:10)] %>% 
@@ -958,7 +935,3 @@ data_prospect <- data[, c(1:10)] %>%
 # data_prospect <- as.data.frame(data_prospect)
 
 ```
-
-
-
-
