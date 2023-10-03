@@ -39,11 +39,80 @@ library(fastDummies)
 library(huxtable)
 library(jtools)
 library(AER)
+library(haven)
+
 ```
+
+```{r}
+data <- read_sav("data/gradus_data.sav")
+
+library(DataExplorer) 
+# use create_report 
+create_report(data)
+
+data <- data[, -c(1,2,41,60)]
+
+str(data)
+
+clean_data <- data %>% 
+  # 0 (always prefer delayed gains or earlier losses) 
+# 1 (always prefer immediate gains or delayed losses).
+  
+  mutate(gain = case_when(
+    str_detect(q2, "Отримати 1600 грн прямо зараз") ~ 1,
+    str_detect(Q1, "Отримати 2080 грн за 3 місяці") ~ 0)) %>% 
+  
+  mutate(gain_now_1 = case_when(
+    str_detect(Q1_now_1, "Отримати 1600 грн прямо зараз") ~ 1,
+    str_detect(Q1_now_1, "Отримати 2160 грн за 3 місяці") ~ 0)) %>% 
+      
+  mutate(gain_now_2 = case_when(
+    str_detect(Q1_now_2, "Отримати 1600 грн прямо зараз") ~ 1,
+    str_detect(Q1_now_2, "Отримати 2240 грн за 3 місяці") ~ 0)) %>% 
+  
+  mutate(gain_later_1 = case_when(
+    str_detect(Q1_wait_1, "Отримати 1600 грн прямо зараз") ~ 1,
+    str_detect(Q1_wait_1, "Отримати 2000 грн за 3 місяці") ~ 0)) %>%
+  
+  mutate(gain_later_2 = case_when(
+    str_detect(Q1_wait_2, "Отримати 1600 грн прямо зараз") ~ 1,
+    str_detect(Q1_wait_2, "Отримати 1920 грн за 3 місяці") ~ 0)) %>%
+  
+  mutate(pay = case_when(
+    str_detect(Q2, "Заплатити 1600 грн прямо зараз") ~ 0,
+    str_detect(Q2, "Заплатити 2080 грн за 3 місяці") ~ 1)) %>%
+  
+  mutate(pay_later_1 = case_when(
+    str_detect(Q2_wait_1, "Заплатити 1600 грн прямо зараз") ~ 0,
+    str_detect(Q2_wait_1, "Заплатити 2240 грн за 3 місяці") ~ 1)) %>%
+  
+  mutate(pay_later_2 = case_when(
+    str_detect(Q2_wait_2, "Заплатити 1600 грн прямо зараз") ~ 0,
+    str_detect(Q2_wait_2, "Заплатити 2160 грн за 3 місяці") ~ 1)) %>%
+  
+  mutate(pay_now_1 = case_when(
+    str_detect(Q2_now_1, "Заплатити 1600 грн прямо зараз") ~ 0,
+    str_detect(Q2_now_1, "Заплатити 2000 грн за 3 місяці") ~ 1)) %>%
+  
+  mutate(pay_now_2 = case_when(
+    str_detect(Q2_now_2, "Заплатити 1600 грн прямо зараз") ~ 0,
+    str_detect(Q2_now_2, "Заплатити 1920 грн за 3 місяці")) %>%  
+  
+  mutate(gain_over_time = case_when(
+    str_detect(Q3_gain_time, "Отримати 1600 грн прямо зараз") ~ 1,
+    str_detect(Q3_gain_time, "Отримати 2000 грн за 3 місяці") ~ 0,
+    str_detect(Q3_gain_time, "Отримати 2400 грн за 6 місяців") ~ 0,
+    str_detect(Q3_gain_time, "Отримати 2800 грн за 9 місяців") ~ 0,
+    str_detect(Q3_gain_time, "Отримати 3200 грн за 12 місяців") ~ 0)) %>%
+    
+  mutate(q20)
+```
+
+# Annex (Pilot Code)
 
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
 # loading data
-data <- read_csv("D:/KSE/Projects/ukraine_discounting/data/survey_data.csv")
+
 
 #removing timestamp, feedback and introduction sections
 data <- data[,-c(1,2,48)]

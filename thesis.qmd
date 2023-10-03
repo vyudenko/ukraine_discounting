@@ -111,62 +111,52 @@ War related questions are taken from here [@fleeing]
 
 A survey \_\_\_\_
 
-# Chapter 2. Literature review
+# Chapter 2. Literature review[^3]
 
-Discuss research papers related to your question in a structured way and explain how you will contribute to the literature
+[^3]: Discuss research papers related to your question in a structured way and explain how you will contribute to the literature
 
-1.  What is temporal discounting and which studies are relevant and why
-2.  Studies on Temporal discounting and mental health
-3.  Studies on Temporal discounting and financial circumstances
-4.  Studies on Temporal discounting and military conflict
-5.  Our contribution
+    1.  What is temporal discounting and which studies are relevant and why
+    2.  Studies on Temporal discounting and mental health
+    3.  Studies on Temporal discounting and financial circumstances
+    4.  Studies on Temporal discounting and military conflict
+    5.  Our contribution
 
-Temporal discounting is the current relative valuation placed on receiving a good or some cash at an earlier date compared with receiving it at a later date [@loewenstein].
-This tendency is often treated as a behavioral anomaly measured by presenting a series of choices that vary values, timelines, framing (for example, gains or losses) and other trade-offs.
-Responses to these series of lottery questions can be aggregated or indexed in ways that test different manifestations of the anomaly or the threshold at which individuals are willing to change their preferences.
-Individuals vary in their responses to intertemporal choice, and their revealed discount rates can be used in predicting behavior across other domains.
-(which domains with examples)
+Temporal discounting, also known as delay discounting or time discounting, is the current relative valuation placed on receiving a good or some cash at an earlier date compared with receiving it at a later date [@loewenstein].
+Temporal discounting is used as a measure of self-control and patience, and greater/smaller rate of temporal discounting is indicative of lower/greater self-control and patience.
+Discounting is a fundamental aspect of preferences for understanding behavioral changes, because the extent to which individuals discount the future and whether they discount in a time-consistent fashion is an important determinant of their life time outcomes [@frederick2002].
+Increased impatience has been shown to predict both low saving and investment [@newell] and poorer dietary choices [@brownback], smoking [@lawless2013], low credit scores [@newell], and poor overall health outcomes [@dellavigna2006].
 
-[@loewenstein] lay the foundation of researching anomalies of choice associated with Discounted Utility Theorem.
-They systematize previous studies and provide methodology for assessing each anomaly: magnitude, gain--loss asymmetry, delay--speedup asymmetry, common difference.
-Drawing upon [@loewenstein] paper [@ruggeri2022] tested generalizability of temporal discounting in 61 countries using 5 choice anomalies.
+Economic theory views preferences as stable and non-changing [@nicholson (textbook)], and studies by [@meier2015; @drichoutis2022] find that over time time preferences are rather stable.
+@drichoutis2022 have studied temporal discounting before and during COVID-19 pandemic - negative shock - and have not found changes in discounting rates.
+[@krupka2013] finds the opposite effect and attributes changing time preferences to changes in the inflation rate and changes in household labor market outcomes.
+Similar result has been found by [@haushofer], who find that negative income shocks increases time discounting, and that they specifically exacerbate present bias, the tendency to overvalue the present relative to the future.
+Time preferences are stable to some extent, but they may be influenced by exogenous factors of market circumstances and emergencies.
 
-[@imas2015] finds differences in discounting between exposed and unexposed individuals, and that this difference is driven by present bias impulsivity and present bias.
+Armed conflicts, like natural disasters and other emergencies, have a potential to change time preferences.
+Studies of temporal discounting and extreme events (natural disasters [@cassar2017; @voors2012], conflict [@imas2015]) have shown that affected people are more impatient than those unaffected by negative consequences of extreme event [@imas2015], who conduct a filed experiment in Democratic Republic of Congo, find that differences in discounting between exposed and unexposed individuals to violence during the conflict is driven by present bias.
+[@voors2012], who conducted a series of field experiments in rural Burundi, also find that individuals exposed to violence are more altruistic, more risk-seeking, and have higher discounting.
+However, in the end they report that the net effect of exposure to violence is unclear, because on the one hand it encourages risk-taking and increases the pro-social behavior, on the other hand it also triggers impatience, which discourages savings and investments.
+Similar result is found by [@cassar2017], who study trust, risk, and time preferences after a tsunami in Thailand.
+They show that the 2004 tsunami has led to substantial long lasting increases in risk aversion, pro-social behavior, and impatience.
+The papers above show a positive association between exposure to violence and temporal discounting, however they don't establish what drives this association.
 
-[@voors2012] conducted a series of field experiments in rural Burundi to examine the impact of exposure to conflict on social, risk, and time preferences.
-They find that individuals exposed to violence are more altruistic, more risk-seeking, and have higher discounting.
-However, in the end they report that the **net effect of exposure to violence is unclear**, because on the one hand it encourages risk-taking and increases the prosocial behavior, on the other hand it also triggers impatience, which discourages savings and investments.
+Studies on conflicts' impact on population usually take into their view 2 aspects: financial and health-related.
+Financial aspect has to do with damage to property, unemployment, inflation - negative financial shock.
+The literature here has conflicting findings.
+Some studies find an increase in risk-seeking behavior due to property damage during the 2011 Australian floods [@page2014]; due to evacuation after Hurricane Katrina [@eckel2009]; and due to community deaths during conflict in Burundi [@voors2012].
+While others show that people become more risk averse - preferring a present certainty over a future uncertainty.
+In particular, [@callen2014] found that individuals who were exposed to violence in Afghanistan, when primed to recall fear, showed an increased preference for certain options; [@blumenstock2021] finds that people expecting violence hold more cash and are less likely to adopt and use mobile money; and [@callen2015] shows that exposure increases patience.
 
-[@cassar2017] study trust, risk, and time preferences after a tsunami in Thailand.
-Similarly to [@voors2012], they find that the 2004 tsunami has led to substantial long lasting increases in risk aversion, prosocial behavior, and impatience.
-In assessing tsunamis impact they considered whether the village was affected, whether the individual or household experienced financial damage, and whether a family member was injured or killed.
-We will use a similar approach in our paper.
+Health-related aspect has to do with physical damage, worsening of physical and mental health.
+Studies here are conclusive about negative impact of exposure to violence on health [@trujillo2021; @miller2010].
+Individuals exposed to violent conflict may experience a range of health-related problems, including disruptions to social systems and networks, as well as physical and psychological harm (for brief review see @singh2021).
+There are studies that show that temporal discounting is positively associated with poorer mental and physical health [@lawless2013; @dellavigna2006].
+In particular, impatience has been linked with smoking, excessive drinking [@mackillop2010], and other addictive behavior.
 
-Increased uncertainty
-
-Other studies, like [@kelley2015] show that mortality concerns appear to cause people to value the future more.
-In the study participants had to think about their own mortality immediately prior to completing a measure of delay discounting.
-Those in treatment group discounted future monetary gains less than did other participants, suggesting that they valued the future more.
-
-*Finally, people may receive help from neighbors, strangers, the government and non-governmental organizations, in addition to giving help to others. All of these manifestations of war affect an individual's choices and preferences. To understand which manifestations can best explain the effect we turn to the relevant literature, discussion of which follows below. Firstly, we look at the papers that take a helicopter look on the topic of time discounting.*
-
-Knowing the potential effects exposure to violence has on human decision making we needed now to apply this insight in our survey, specifically in the Monetary Choice Questionnaire.
-For this we need to figure out a benchmark - which monetary amount will be salient for our responders, a discount rate, and a time frame.
-There are many studies that find various discount rates for different time periods and amounts (see (Frederick and Loewenstein 2002) for a review).
-In general, shorter time periods are associated with higher rates of observed discounting.
-(Ruggeri et al. 2022) uses 10% of median salary as a benchmark, 10% discounting rate and "now-12 months-24 months" time frame.
-While this study involved Ukraine in 2021, using the same percentage and time will not yield valuable results for us.
-To understand conditions facing Ukrainians right now, we turn to a paper on Argentina and Britain (Macchia, Plagnol, and Reimers 2018), in which authors use inflation rate in both countries (Britain - low, Argentina - high inflation) to study people's sensitivity with regards to delay discounting choices.
-Another study in Zimbabwe (Larochelle, Alwang, and Taruvinga 2014) provides an extreme account of hyperinflation and how it affects people's wellbeing.
-As the Russo-Ukrainian war is the most televised war of recent years, we thought about looking into the use of social media and how it relates with discounting.
-(Shenhav, Rand, and Greene 2017) in their study of temporal discounting found that people who with steeper discounting prefer to consume information that is less complex and multi-faceted, and use short-form social media (e.g. Twitter).
-Our contribution will lie in explaining how various experiences of war affect people's discounting and financial decision making.
-
-By combining a wide range of indicators (variables) that are related to the current experiences of war by Ukrainians, this paper aims to investigate which manifestations of war have the highest effect on temporal discounting.
+Having these two additional perspectives on financial and health outcomes are crucial in our paper, as our contribution will lie in combining these aspects in explaining war's influence on temporal discounting of affected individuals.
+Specifically, we will answer if there is an interplay between specific war experiences and individuals time preferences.
 
 # Chapter 3. Methodology
-
-\<make explanations of hypotheses shorter\>
 
 There are several channels through which war experience could affect individual preferences.
 One plausible channel would be through a large negative shock to wealth or income, which in turn would alter preferences.
@@ -180,21 +170,12 @@ Here, we review the literature as we describe our predictions for the war's effe
 
 First is that individual preferences are affected in many ways in which person "experiences" war.
 For example, physical damage to oneself, family or friends; property damage; loss of a relative or a close one; living in fear, witnessing death, suffering, forced evacuation, blackout etc.
-All these manifestations may have different impact on people.
-A psychology literature suggests that conflicts and natural disasters alter exposed individuals' risk and time[^3] preferences [@imas2015; @voors2012; @eckel2009; @cassar2017; @willinger].
+All these manifestations may have different impact on an individual.
+A psychology literature suggests that conflicts and natural disasters alter exposed individuals' risk and time[^4] preferences [@imas2015; @voors2012; @eckel2009; @cassar2017; @willinger].
+We expect that there be an association between temporal discounting, namely present bias, and property damage, as suggested by [@page2014]; a strong correlation between physical damage to oneself and discounting [@bucciol2015], despite the finding of weak or insignificant relationship by @imas2015 and @voors2012; the distribution of temporal discounting scores will not be significantly different from the study by [@ruggeri2022], because we suspect that exposure to violence (war) would have a significant effect on the individual, but not on the overall population, as suggested by [@meier2015].
 
-[^3]: The relationship between risk preferences and time preferences is disputed, some studeis find that they are highly correlated [@willinger; @beine2020], but a recent metastudy [@johnson2020] concludes that this relationship is not as strong .
+[^4]: The relationship between risk preferences and time preferences is disputed, some studeis find that they are highly correlated [@willinger; @beine2020], but a recent metastudy [@johnson2020] concludes that this relationship is not as strong .
     Our study doesn't specifically study individual's risk preferences, but still considers finding on risk preferences as relevant to our research.
-
-There are studies that show that there is a positive association between temporal discounting and exposure to violence[^4] [@imas2015; @voors2012].
-
-[^4]: which would be experience of war in our paper.
-
-Prior evidence indicates a weak or insignificant relationship between violence and a measure of time preferences, but in those studies all intertemporal choices were only made between options in the future.
-[@callen2015]finds that individuals affected by a tsunami in Sri Lanka become more patient over the long-run.
-[@voors2012] finds that living in an area where a negative event or violence occurred has a weak effect on time preferences.
-This last study measured exposure to violence on the community level, and individuals who may have seen violence indirectly or not at all were classified as exposed.
-Additionally, they examined time preferences over outcomes that all lay in the future, and in turn could not identify an effect on present bias separate from exponential discounting.
 
 ### H2. Negative financial shock is positively associated with discounting
 
@@ -205,17 +186,16 @@ Military violence doesn't just affect the mental health of civilians living in c
 Despite the ongoing war subjective evaluation of one's financial wellbeing has barely changed and is on the pre-invasion level [@pres-rel].
 This could have multiple explanation: a) overall level has decreased more than for individuals (everyone experiences blackouts, cuts in salaries...)[^5].
 [@m.o.2021] supports this.
+b) people supporting each other and cushioning the negative income shocks, which would be consistent with finding of [@voors2012], who find the rise of pro-social behavior.
 
 [^5]: That is if it is just me who got poorer than I would significantly change my financial attitudes, if everyone (around me) became poorer than I wouldn't feel it as strongly - they have it just as bad after all.
+
+We expect that negative evaluation of one's own wellbeing will be a strong predictor of temporal discounting, but objective will not.
 
 People with low incomes exhibit higher temporal discounting compared to richer people, i.e., they are more likely to prefer smaller and sooner over larger and later payments.
 Because of war, many people may experience negative financial shock, which would alter their preferences and they will be more tempted to pick sooner smaller option.
 
 [@ruggeri2022] indicates that anyone facing a negative financial environment---even with a better income within that environment---is likely to make decisions that prioritize immediate clarity over future uncertainty.
-
-[@haushofer] finds that negative income shocks lead to an increase in discounting; specifically, they exacerbate present bias, the tendency to overvalue the present relative to the future.
-Conversely, positive income shocks weakly decrease discounting.
-In contrast, high vs. low levels of income in the absence of shocks do not affect discounting.
 
 [@mellis2018] in their paper asked participants to think about neutral (job transfer) or negative income shock (losing hob) before completing a task on delay discounting.
 Narratives of negative income shock increased delay discounting compared to control narratives.
@@ -230,7 +210,11 @@ If violence changes people's preferences, it will also change the effects of pol
 Research in psychology has demonstrated that exposure to violence and other trauma (e.g. extreme poverty) has complex, deleterious long-run effects on both mental and physical health (Boscarino, 2006; Yehuda, 2006).
 
 There have been a vast literature on the effects of natural disasters on choice preferences (Eckel, El-Gamal, and Wilson 2009; Cassar, Healy, and Von Kessler 2017), and some relevant studies on effect of armed conflict experience on, for example, risk aversion in South Korea [@kim2014] , social, risk and time preferences in Burundi (Voors et al. 2012), and on happiness in Ukraine (Coupe and Obrizan 2016).
-Some studies report that mental health affects discounting \_\_\_\_\_, others that it doesn't Subjective mental health has been shown to be positively associated with discounting (Löckenhoff, O'Donoghue, and Dunning 2011) In the context of ongoing Russo-Ukrainian War, studying intertemporal choices of people affected by war can help in creation of policy decisions that will mitigate negative repercussions of exposure to violence and destruction.
+Some studies report that mental health affects discounting \_\_\_\_\_, others that it doesn't
+
+Subjective mental health has been shown to be positively associated with discounting [@löckenhoff2011]
+
+In the context of ongoing Russo-Ukrainian War, studying intertemporal choices of people affected by war can help in creation of policy decisions that will mitigate negative repercussions of exposure to violence and destruction.
 This is important, because any effects conflict might have on risk aversion, time discounting, or trusting behavior, could substantially affect how people are able to recover from conflicts..
 In other words, exposure to violence impacts communities not only through the direct losses they inflict, like physical damage or seizure/destruction of business, but also through people's willingness to attempt new business ventures, to save, and to work cooperatively.
 In this research we want to study intertemporal choices of Ukrainians 1.5 years after the onset of full-scale invasion as it relates to experience of war, media usage, and trust in media.
@@ -254,6 +238,9 @@ Below, we describe each of our experimental treatments in detail.
 Complete experimental instructions can be found in the Appendix.
 
 ## 4.1 Measuring Temporal Discounting
+
+This tendency is often treated as a behavioral anomaly measured by presenting a series of choices that vary values, timelines, framing (for example, gains or losses) and other trade-offs.
+Responses to these series of lottery questions can be aggregated or indexed in ways that test different manifestations of the anomaly or the threshold at which individuals are willing to change their preferences.
 
 To measure temporal discounting and we mostly follow @ruggeri2022, in which not only the temporal discounting is measured, but its anomalies: sign effect (gain/loss asymmetry), magnitude effect, delay/speedup asymmetry and present bias.
 
@@ -282,8 +269,8 @@ First, the baseline amount was set to 2000 UAH, because studies like [@green1997
 That is why we wanted to make choices salient.
 Future choices should also be salient - respondents should feel that there is additional value in waiting.
 
-Second, we have set the perios to 3 months.
-As it should strike the balance between uncertain future and relaively certain present.
+Second, we have set the periods to 3 months.
+As it should strike the balance between uncertain future and relatively certain present.
 
 Full list of questions on temporal discounting can be found in Appendix
 
@@ -309,6 +296,8 @@ Debts are related to intertemporal discounting [@ikeda2015]
 ## 4.3 Measuring Mental Health
 
 As per the findings of various academic publications, it has been established that the impact of war on mental health and well-being is notably negative, resulting in the manifestation of a range of psychological disorders such as PTSD, depression (Charlson et al., 2019; Gonçalves Júnior et al., 2022; Hendrickx et al., 2019; Osokina et al., 2022; Perkins et al., 2018), and suicidal ideation (Gonçalves Júnior et al., 2022)
+
+[@löckenhoff2011] used SF-12 and found that associations with age and discounting were primarily driven by self-reported interference of emotional problems with accomplishments, work/activities, and social involvement as well as feeling "downhearted and blue."
 
 Studies of the health of Ukrainian children and adolescents have confirmed that the risk of developing symptoms of depression exists both during the war and in the post-war period (Gonçalves Júnior et al., 2022; Osokina et al., 2022) According to Gonçalves Júnior et al. (2022), military conflicts also worsen the psycho-emotional state of war-affected populations, resulting in negative feelings such as sadness, anger, guilt, or loneliness.
 
@@ -400,6 +389,18 @@ For estimating the size of the effect of age, we outlined the following age grou
 
 # Chapter 6. Conclusions and Recommendations
 
+## Study Limitations
+
+-   No war experience frequency, intensity, severity
+
+-   Not full SF-12
+
+-   Not full FWBS
+
+-   Limited to those who are currently in UA (neglecting those \~7 mil who left)
+
+-   Hypothetical nature, however there is no alternative
+
 # Ethics approval and informed consent
 
 # References {.unnumbered}
@@ -416,3 +417,48 @@ Survey can be found via link
 This phenomenon, also referred to as delay discounting, is a very common occurrence in life when having to weigh a choice between two options whose outcomes are given at different times in the future.
 The question also arises: what factors influence temporal discounting?
 The following section will give a brief preview of some of the factors identified in the literature.
+
+Many of life's most important choices require people to weigh the immediate consequences of their actions against delayed consequences in the near or distant future.
+When faced with such 'intertemporal' choices, most people show a relative disregard for delayed gains and losses relative to immediate ones.
+This tendency to weigh positive or negative outcomes less heavily as they occur farther into the future is referred to as temporal discounting or delay discounting (Frederick, Loewenstein, & O'Donoghue, 2002), and the degree to which a given person devalues future consequences relative to immediate ones is referred to as their discount rate.1 Although much of the research on temporal discounting is laboratory based, the phenomenon can be readily observed in real-life settings.
+The majority of lottery winners, for example, choose a smaller, immediate lump-sum payment over a much larger, but temporally delayed payout (Aghdami, 1999).
+Indeed, temporal discounting is a standard assumption in empirical economic research.
+
+Our results suggest that the negative effect of the conflict on financial well-being goes beyond the shock to the current income since people adjust their needs to their financial means.
+This is consistent with previous research
+
+In assessing tsunamis impact they considered whether the village was affected, whether the individual or household experienced financial damage, and whether a family member was injured or killed.
+We will use a similar approach in our paper.
+
+Other studies, like [@kelley2015] show that mortality concerns appear to cause people to value the future more.
+In the study participants had to think about their own mortality immediately prior to completing a measure of delay discounting.
+Those in treatment group discounted future monetary gains less than did other participants, suggesting that they valued the future more.
+
+Conversely, positive income shocks weakly decrease discounting.
+In contrast, high vs. low levels of income in the absence of shocks do not affect discounting.
+
+Our interest lies in how time preferences are affected by negative shocks.
+
+Interesting to us are papers that look at extreme events and their effect on disounting....
+natural disaster and conflict
+
+Temporal discounting is directly associated with real-life wealth [@epper2020] and inequality [@epper2020; @ruggeri2022], educational outcomes
+
+Individuals vary in their responses to intertemporal choice [@ruggeri2022; @gong], and their revealed discount rates can be used in predicting behavior across other domains.
+
+[@newell] Individuals with less education, larger households, low income, and low credit scores had systematically higher discount rates
+
+[@loewenstein] lay the foundation of researching anomalies of choice associated with Discounted Utility Theorem.
+They systematize previous studies and provide methodology for assessing each anomaly: magnitude, gain--loss asymmetry, delay--speedup asymmetry, common difference.
+Drawing upon [@loewenstein] paper [@ruggeri2022] tested generalizability of temporal discounting in 61 countries using 5 choice anomalies.
+
+*Finally, people may receive help from neighbors, strangers, the government and non-governmental organizations, in addition to giving help to others. All of these manifestations of war affect an individual's choices and preferences. To understand which manifestations can best explain the effect we turn to the relevant literature, discussion of which follows below. Firstly, we look at the papers that take a helicopter look on the topic of time discounting.*
+
+In general, shorter time periods are associated with higher rates of observed discounting.
+[@ruggeri2022] uses 10% of median salary as a benchmark, 10% discounting rate and "now-12 months-24 months" time frame.
+
+To understand conditions facing Ukrainians right now, we turn to a paper on Argentina and Britain [@macchia2018], in which authors use inflation rate in both countries (Britain - low, Argentina - high inflation) to study people's sensitivity with regards to delay discounting choices.
+
+By combining a wide range of indicators (variables) that are related to the current experiences of war by Ukrainians, this paper aims to investigate which manifestations of war have the highest effect on temporal discounting.
+
+[@lawless2013]
