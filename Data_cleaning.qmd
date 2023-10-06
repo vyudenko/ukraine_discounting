@@ -645,6 +645,24 @@ g4 <- check %>%
 gridExtra::grid.arrange(g1, g2, g3, g4, ncol = 2)
 ```
 
+```{r}
+ggplot(data_copy, aes(x = q19)) +
+  geom_bar() +
+  labs(title = "Present bias",
+       x = "",
+       y = "# of responders") +
+  geom_text(aes(label = ..count..), 
+            stat = 'count', vjust = -0.5, 
+            color = "black", size = 5, 
+            family = "Garamond") +
+  theme_classic() +
+  scale_x_continuous(breaks = c(1,2,3,4,5), 
+                     labels = c("Now",
+                                "3 months",
+                                "6 months",
+                                "9 months",
+                                "12 months"))
+```
 
 
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
