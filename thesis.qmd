@@ -1,5 +1,4 @@
 ---
- nmbnbn---
 title: "My Manuscript"
 format: 
   html:
@@ -134,38 +133,42 @@ Discounting is a fundamental aspect of preferences for understanding behavioral 
 Temporal discounting is used as a measure of self-control and patience, and greater/smaller rate of temporal discounting is indicative of lower/greater self-control and patience.
 Increased impatience has been shown to predict both low savings and investment [@newell] and poorer dietary choices [@brownback], smoking [@lawless2013], low credit scores [@newell], and poor overall health outcomes [@dellavigna2006].
 
-Economic theory views preferences as stable and non-changing [@nicholson (textbook)], and studies by [@meier2015; @drichoutis2022] find that time preferences are rather stable.
-A study by @drichoutis2022 have looked at dynamics of temporal discounting before and during COVID-19 pandemic - negative shock - and have also not found changes in discounting rates.
+Economic theory views preferences as stable and non-changing [@stigler1977], and studies by [@meier2015; @drichoutis2022] find that time preferences are rather stable.
+A study by @drichoutis2022 have looked at dynamics of temporal discounting before and during COVID-19 pandemic - negative shock - and have also found no changes in discounting rates.
 [@krupka2013], using a panel data from Seattle and Denver Income Maintenance Experiment find the opposite effect and attributes changing time preferences to changes in the inflation rate and changes in household labor market outcomes - income and hours worked.
 Similar result has been found by [@haushofer], who find that negative income shocks increases time discounting, and that they specifically exacerbate present bias, the tendency to overvalue the present relative to the future.
 Time preferences are stable to some extent, but they may be influenced by exogenous factors of market circumstances and emergencies.
 
-Notwithstanding that researches find conflicting results, temporal discounting is a real phenomenon and it is present to various extents in all developed and developing countries [@ruggeri2022].
+Notwithstanding that researches find conflicting results, temporal discounting is a real phenomenon and it is present to various extents in all developed and developing countries [@ruggeri2022][^5].
 Discrepancies may arise because there is no agreed-upon measure of temporal discounting and there are different aspects (sometimes referred to as anomalies of rational choice [@loewenstein]) to it.
 Most studies try to measure indifference points by asking respondents a battery of questions with varying amounts and time periods - an approach popularized in a seminal paper [@kirby2004] - which results in a discount scores at which individual is indifferent between immediate and later amount.
+
+[^5]: Temporal discounting has also been studied on animals: pigeons [@ong2004] and monkeys [@stevens2005], with authors hoping that these findings "may contribute to the divergent results across species".
 
 More recent studies recognize the need to look at multiple aspects of temporal discounting to better capture individual's time preferences.
 These anomalies are sign effect, absolute magnitude effect, delay-speedup asymmetry, and present bias [@loewenstein; @ruggeri2022; @scholten2013].
 Sign effect or gain-loss asymmetry is when gains are discounted more than losses.
-For example, prefering to receive 2000 UAH now over 2600 UAH in 3 months, but also preferring to pay 2000 UAH now over paying 2600 UAH in 3 months.
+For example, preferring to receive 2000 UAH now over 2600 UAH in 3 months, but also preferring to pay 2000 UAH now over paying 2600 UAH in 3 months.
 Absolute magnitude is an increased preference for delayed gains when values become substantially larger, even when relative differences are constant (for example, preferring 2000 UAH now over 2600 in 3 months and prefer 12600 UAH in 3 months over 10000 now).
 Delay-speedup asymmetry is when delayed option is framed as added value individual chooses an immediate, smaller gain, but prefers the larger, later amount if an immediate gain is framed as a reduction (for example, prefer to receive a gain of 2000 UAH rather than wait 3 months for an additional 600 UAH and prefer to wait for 3 months to receive 2600 UAH rather than to pay 600 UAH and receive the gain now).
-Lastly, present bias is when ....
+Lastly, present bias is when we observe lower discounting over a given time interval when the start of the interval is shifted to the future (for example, preferring 2000 UAH now over 2600 UAH in 3 months and prefer 2600 UAH in 6 months over 2000 UAH in 3 months).
 
-Studies here find that depending on the time period the choices are discounted differently - a phenomenon called hyperbolic discounting [@laibson1996].
+Majority of studies on time and risk preferences deal with hypothetical situations [@johnson2020], as using actual monetary rewards is neither feasible nor economically optimal.
+The criticism that this approach gets is that people can be framed to answer a specific way or that these answers don't translate to actual real-life choices.
+Which is a reasonable objection, however there are studies on temporal discounting that are empirical that replicate the findings of survey-based studies.
+For example, [@yao2012] uses consumer's data to identify the discount rate by imputing the utility/profits using decisions made in a context in which the future is inconsequential, and [@voors2012] conducted a series of field experiments, implementing games to determine risk, time, and social preferences.
 
-No simple theory can hope to reflect all motives that influence a particular decision.
-But with these anomalies we can catch most of the deviation from the model of Discounted Utility.
+Summing up, temporal discounting is a phenomenon that shows how people discount future outcome.
+There are both hypothetical and empirical studies (field experiments) that show, all in different ways, that individual's time and risk preferences vary over time and are affected by life experiences.
+Most pertinent to our study are the experiences related to conflict and other crises, and how they affect individual's preferences, which we review next.
 
-What factors affect individual's time and risk preferences....
-
-Armed conflicts, like natural disasters and other emergencies, have a potential to change time preferences.
-Studies of temporal discounting and extreme events (natural disasters [@cassar2017; @voors2012], conflict [@imas2015]) have shown that affected people are more impatient than those unaffected by negative consequences of extreme event [@imas2015], who conduct a filed experiment in Democratic Republic of Congo, find that differences in discounting between exposed and unexposed individuals to violence during the conflict is driven by present bias.
-[@voors2012], who conducted a series of field experiments in rural Burundi, also find that individuals exposed to violence are more altruistic, more risk-seeking, and have higher discounting.
-However, in the end they report that the net effect of exposure to violence is unclear, because on the one hand it encourages risk-taking and increases the pro-social behavior, on the other hand it also triggers impatience, which discourages savings and investments.
+In psychology literature it is widely accepted that large negative events can have persistent effects on someone's preferences and life choices.
+Studies of temporal discounting and extreme events are scarce and mostly deal with natural disasters [@cassar2017; @voors2012], and conflict [@imas2015].
+[@imas2015], who conduct a filed experiment in Democratic Republic of Congo, find that differences in discounting between exposed and unexposed individuals to violence during the conflict is driven by present bias.
+[@voors2012], who conducted a series of field experiments in rural Burundi, also find that individuals exposed to violence are more risk-seeking, and have higher discounting.
 Similar result is found by [@cassar2017], who study trust, risk, and time preferences after a tsunami in Thailand.
-They show that the 2004 tsunami has led to substantial long lasting increases in risk aversion, pro-social behavior, and impatience.
-The papers above show a positive association between exposure to violence and temporal discounting, however they don't establish what drives this association.
+They show that the 2004 tsunami has led to substantial long lasting increases in pro-social behavior, and impatience, but not in risk preferences.
+These papers above show a positive association between exposure to violence and temporal discounting, from which we can infer that negative temporary and prolonged conflict alters individual's preferences.
 
 Studies on conflicts' impact on population usually take into their view 2 aspects: financial and health-related.
 Financial aspect has to do with damage to property, unemployment, inflation - negative financial shock.
@@ -179,6 +182,16 @@ Studies here are conclusive about negative impact of exposure to violence on hea
 Individuals exposed to violent conflict may experience a range of health-related problems, including disruptions to social systems and networks, as well as physical and psychological harm (for brief review see @singh2021).
 There are studies that show that temporal discounting is positively associated with poorer mental and physical health [@lawless2013; @dellavigna2006].
 In particular, impatience has been linked with smoking, excessive drinking [@mackillop2010], and other addictive behavior.
+
+The prevailing mental health issue during the post-war period is post-traumatic stress disorder (PTSD) (references).
+While trauma can be a devastating experience, it is important to recognize that it can also be an opportunity for growth and transformation.
+PTG is often associated with the concept of resilience, which refers to the ability to bounce back from adversity.
+While resilience is an important trait to have, PTG takes it one step further by suggesting that individuals can actually benefit from traumatic experiences in unexpected ways (Dell'Osso et al., 2022; Jin et al., 2014).
+However, not everyone is affected by war the same way: some bounce back and exhibit positive psychological changes that can occur after experiencing a traumatic event, which are referred to as Post Traumatic Stress (PTG).
+It was found that people living in war-torn areas exhibit moderate levels of PTG.
+Women are more prone to PTG than men; younger and older participants show higher levels of PTG, while middle-aged participants exhibit lower levels; and financial security increases PTG.
+Presence in Ukraine increases personal strength, while living outside of Ukraine increases the possibilities for new PTG strategies.
+Trauma exposure during the war does not increase levels of PTG Post-Traumatic Growth (PTG)
 
 Having these two additional perspectives on financial and health outcomes are crucial in our paper, as our contribution will lie in combining these aspects in explaining war's influence on temporal discounting of affected individuals.
 Specifically, we will answer if there is an interplay between specific war experiences and individual's time preferences.
@@ -198,9 +211,9 @@ Here, we review the literature as we describe our predictions for the war's effe
 First is that individual preferences are affected in many ways in which person "experiences" war.
 For example, physical damage to oneself, family or friends; property damage; loss of a relative or a close one; living in fear, witnessing death, suffering, forced evacuation, blackout etc.
 All these manifestations may have different impact on an individual.
-A psychology literature suggests that conflicts and natural disasters alter exposed individuals' risk and time[^5] preferences [@imas2015; @voors2012; @eckel2009; @cassar2017; @willinger].
+A psychology literature suggests that conflicts and natural disasters alter exposed individuals' risk and time[^6] preferences [@imas2015; @voors2012; @eckel2009; @cassar2017; @willinger].
 
-[^5]: The relationship between risk preferences and time preferences is disputed, some studeis find that they are highly correlated [@willinger; @beine2020], but a recent metastudy [@johnson2020] concludes that this relationship is not as strong .
+[^6]: The relationship between risk preferences and time preferences is disputed, some studeis find that they are highly correlated [@willinger; @beine2020], but a recent metastudy [@johnson2020] concludes that this relationship is not as strong .
     Our study doesn't specifically study individual's risk preferences, but still considers finding on risk preferences as relevant to our research.
 
 We expect that there be an association between temporal discounting, namely present bias and property damage, as suggested by [@page2014]; a strong correlation between physical damage and loss of a close person with risky behavior [@bucciol2015], despite the finding of weak or insignificant relationship by @imas2015 and @voors2012; the distribution of temporal discounting scores will not be significantly different from the study by [@ruggeri2022], because we suspect that exposure to violence (war) would have a significant effect on the individual, but not on the overall population, as suggested by [@meier2015].
@@ -222,10 +235,10 @@ Military violence doesn't just affect the mental health of civilians living in c
 According to [@pres-rel] subjective evaluation of Ukrainian's FWB has barely changed and is on the pre-invasion level.
 This could have multiple explanations:
 
-a\) community FWB has decreased more than individual FWB, because everyone experiences blackouts, cuts in salaries, damages due to russian aggression[^6].
+a\) community FWB has decreased more than individual FWB, because everyone experiences blackouts, cuts in salaries, damages due to russian aggression[^7].
 [@m.o.2021] supports this claim.
 
-[^6]: That is if it is just me who got poorer than I would significantly change my financial attitudes, if everyone (around me) became poorer than I wouldn't feel it as strongly - they have it just as bad after all.
+[^7]: That is if it is just me who got poorer than I would significantly change my financial attitudes, if everyone (around me) became poorer than I wouldn't feel it as strongly - they have it just as bad after all.
 
 b\) received social support, which is consistent with [@theinte2021] and results of [@voors2012], who find the rise of pro-social behavior in the aftermath of an emergency.
 
@@ -316,10 +329,10 @@ This approach should capture multiple aspects of FWB and provide robust estimati
 
 ## 4.3 Measuring Mental Health
 
-As there are no feasible ways to measure objective mental health, we measure subjective health with SF-12 [@ware1996], a widely used and well-validated measure which yields separate scores for mental and physical health[^7], which is widely used in behavioral sciences [@löckenhoff2011].
+As there are no feasible ways to measure objective mental health, we measure subjective health with SF-12 [@ware1996], a widely used and well-validated measure which yields separate scores for mental and physical health[^8], which is widely used in behavioral sciences [@löckenhoff2011].
 We use 3 Likert-type items related to mental health: "In the last 4 weeks, how often have you been feeling blue/calm/full of energy?" **The dependent variable is a sum \_\_\_\_\_**
 
-[^7]: In our study we will focus only on mental health and omit physical health.
+[^8]: In our study we will focus only on mental health and omit physical health.
 
 ## 4.4 Measuring War Experience
 
