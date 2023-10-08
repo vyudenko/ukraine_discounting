@@ -47,10 +47,26 @@ library(haven)
 ```{r}
 data <- read_sav("data/gradus_data.sav")
 
-colnames(data)[colnames(data) == "intnr"] <- "ResponseID"
+colnames(data)[colnames(data) == "intnr"] <- "ResponseId"
 data <- data[, -c(2,41,60)]
 
-data_copy <- data
+
+data_copy <- data %>% 
+  relocate(c(q12, q13), .after = q18) %>% 
+  rename(temp_q17 = "q12",
+         temp_q18 = "q13",
+         temp_q12 = "q14",
+         temp_q13 = "q15",
+         temp_q14 = "q16",
+         temp_q15 = "q17",
+         temp_q16 = "q18") %>% 
+  rename(q17 = "temp_q17",
+         q18 = "temp_q18",
+         q12 = "temp_q12",
+         q13 = "temp_q13",
+         q14 = "temp_q14",
+         q15 = "temp_q15",
+         q16 = "temp_q16")
 
 # Fixing temporal discounting answers 
 
@@ -61,7 +77,386 @@ change_values <- function(x) {
 }
 
 data_copy[, c(2:18)] <- lapply(data_copy[, c(2:18)], change_values)
+```
 
+```{r}
+#######################################
+######### Stats-related functions #####
+#######################################
+
+get_scores <- function (x) {
+  
+  ## This function will compute the total temporal discount for each participant based on their responses to each block question
+  ##
+  ## Input (x): A block of questions (5 previous questions to the one parsed to the function)
+  ##
+  ## Output: Vector of individual sum responses per block
+  
+  f <- as.numeric(gsub("block", "", x$block))[1]
+  
+  if (f == 1) {
+    x %>% 
+      mutate(score = case_when(
+        amount_later == 750 & choice == 0 ~ 5,
+        amount_later == 750 & choice == 1 ~ 4,
+        amount_later == 600 & choice == 1 ~ 3,
+        amount_later == 510 & choice == 0 ~ 2,
+        amount_later == 505 & choice == 0 ~ 1,
+        amount_later == 505 & choice == 1 ~ 0
+      ))
+    
+  } else if (f == 2) {
+    x %>% 
+      mutate(score = case_when(
+        amount_later == 750 & choice == 1 ~ 0,
+        amount_later == 750 & choice == 0 ~ 1,
+        amount_later == 600 & choice == 0 ~ 2,
+        amount_later == 510 & choice == 1 ~ 3,
+        amount_later == 505 & choice == 0 ~ 5,
+        amount_later == 505 & choice == 1 ~ 4
+      ))
+  } else {
+    x %>% 
+      mutate(score = case_when(
+        amount_later == 7500 & choice == 0 ~ 5,
+        amount_later == 7500 & choice == 1 ~ 4,
+        amount_later == 6000 & choice == 1 ~ 3,
+        amount_later == 5100 & choice == 0 ~ 2,
+        amount_later == 5050 & choice == 0 ~ 1,
+        amount_later == 5050 & choice == 1 ~ 0
+      ))
+  }
+}
+
+
+
+get_latest_answer <- function (x, y){
+  
+  ## This function will obtain the latest answer given to the initial baseline questions. This function is necessary to control for the different possible options shown to each individual.
+  ##
+  ## Input: (x) A data frame including choices to questions; (y) a scalar identifying the next item following the item block. 
+  ##
+  ## Output: Vector of individual responses to the anomaly item
+  
+  x %>% 
+    group_by(ResponseId) %>% 
+    filter(as.numeric(gsub("Q", "", question)) < y) %>% 
+    arrange(desc(as.numeric(gsub("Q", "", question)))) %>% 
+    slice(1) %>% 
+    ungroup() %>% 
+    arrange(ResponseId) %>% 
+    dplyr:::select(ResponseId, choice, amount_later, block) 
+}
+
+get_second_choices <- function (x, y) {
+  
+  ## This function will obtain the answer given to the anomalies questions. This function necessary to control for the different possible options shown to each individual
+  ##
+  ## Input: (x) A data frame including choices to questions; (y) the anomaly item identifier. 
+  ##
+  ## Output: Vector of individual responses to the anomaly item
+  
+  x %>% 
+    arrange(ResponseId) %>%   
+    arrange(desc(as.numeric(gsub("Q", "", question)))) %>%   
+    filter(question == y) %>% 
+    dplyr:::select(choice) %>% 
+    unlist() %>% 
+    as.vector()
+}
+
+
+fixer_anom <- function (d, type = NULL){
+  
+  ## This function will compute whether an anomaly was observed (and whether the initial answer was a sooner or later decision) and if the possible anomaly was congruent with theory or not.
+  ##
+  ## Input: (x) A data frame including the first choice (fc) and the type of anomaly to be estimated. 
+  ##
+  ## Output: dataframe including the individual id and the variables response (possible anomaly and initial decision) and anomaly (whether an anomaly or a consistent decision was observed).
+  
+  if (type == "presbias" || type == "absolmag" || type == "delay") {  
+    
+    d %>%
+      mutate(response = case_when (
+        fc == 0 & sc == 0 ~ "No anomaly sooner",
+        fc == 1 & sc == 0 ~ "Anomaly later",
+        fc == 0 & sc == 1 ~ "Anomaly sooner",
+        fc == 1 & sc == 1 ~ "No anomaly later")) %>% 
+      mutate (response = as.factor(response)) %>% 
+      mutate(anomaly = case_when(
+        response == "Anomaly later" ~ "Possible anomaly",
+        response == "Anomaly sooner" ~ "Possible anomaly",
+        response == "No anomaly later" ~ "Consistent",
+        response == "No anomaly sooner" ~ "Consistent"
+      )) %>% 
+      mutate(anomaly = fct_relevel(anomaly, "Consistent", "Possible anomaly")) %>%
+      mutate(response = fct_recode(response, 
+                                   "Congruent" = "Anomaly sooner", 
+                                   "Not congruent" = "Anomaly later")) %>% 
+      mutate(type = rep(type, length(response))) %>% 
+      dplyr:::select(ResponseId, response, anomaly, type) 
+    
+  } else if (type == "gainloss") {  
+    
+    d %>%
+      mutate(response = case_when (
+        fc == 0 & sc == 0 ~ "Anomaly sooner",
+        fc == 1 & sc == 0 ~ "No anomaly later",
+        fc == 0 & sc == 1 ~ "No anomaly sooner",
+        fc == 1 & sc == 1 ~ "Anomaly later")) %>% 
+      mutate (response = as.factor(response)) %>% 
+      mutate(anomaly = case_when(
+        response == "Anomaly later" ~ "Possible anomaly",
+        response == "Anomaly sooner" ~ "Possible anomaly",
+        response == "No anomaly later" ~ "Consistent",
+        response == "No anomaly sooner" ~ "Consistent"
+      )) %>% 
+      mutate(anomaly = fct_relevel(anomaly, "Consistent", "Possible anomaly")) %>% 
+      mutate(response = fct_recode(response, 
+                                   "Congruent" = "Anomaly sooner", 
+                                   "Not congruent" = "Anomaly later")) %>%
+      mutate(type = rep(type, length(response))) %>% 
+      dplyr:::select(ResponseId, response, anomaly, type) 
+    
+  }  else if (type == "subaddit") {  
+    
+    d %>%
+      mutate(response = case_when (
+        fc == 0 & sc == 0 ~ "No anomaly sooner",
+        fc == 0 & sc == 1 ~ "Anomaly sooner",
+        fc == 1 & sc == 1 ~ "Inconsistent",
+        fc == 1 & sc == 0 ~ "Inconsistent",
+        fc == 2 & sc == 0 ~ "Anomaly later",
+        fc == 2 & sc == 1 ~ "No anomaly later",
+      )) %>% 
+      mutate (response = as.factor(response)) %>% 
+      mutate(anomaly = case_when(
+        response == "Anomaly later" ~ "Possible anomaly",
+        response == "Anomaly sooner" ~ "Possible anomaly",
+        response == "No anomaly later" ~ "Consistent",
+        response == "No anomaly sooner" ~ "Consistent",
+        response ==  "Inconsistent" ~ "Inconsistent"
+      )) %>% 
+      mutate(anomaly = fct_relevel(anomaly, "Consistent", "Possible anomaly", "Inconsistent")) %>% 
+      mutate(response = fct_recode(response, 
+                                   "Congruent" = "Anomaly sooner", 
+                                   "Not congruent" = "Anomaly later")) %>%
+      mutate(type = rep(type, length(response))) %>% 
+      dplyr:::select(ResponseId, response, anomaly, type)  
+    
+  }
+} 
+
+fixer_anoms <- function (d, type = NULL){
+  
+  ## This function will compute whether an anomaly was observed (and whether the initial answer was a sooner or later decision) and if the possible anomaly was congruent with theory or not.
+  ##
+  ## Input: (x) A data frame including the first choice (fc) and the type of anomaly to be estimated. 
+  ##
+  ## Output: dataframe including the individual id and the variables response (possible anomaly and initial decision) and anomaly (whether an anomaly or a consistent decision was observed).
+  
+  if (type == "presbias" || type == "absolmag" || type == "delay") {  
+    
+    d %>%
+      mutate(response = case_when (
+        fc == 0 & sc == 0 ~ "No anomaly sooner",
+        fc == 1 & sc == 0 ~ "Anomaly later",
+        fc == 0 & sc == 1 ~ "Anomaly sooner",
+        fc == 1 & sc == 1 ~ "No anomaly later")) %>% 
+      mutate (response = as.factor(response)) %>% 
+      mutate(anomaly = case_when(
+        response == "Anomaly later" ~ "Possible anomaly",
+        response == "Anomaly sooner" ~ "Possible anomaly",
+        response == "No anomaly later" ~ "Consistent",
+        response == "No anomaly sooner" ~ "Consistent"
+      )) %>% 
+      mutate(anomaly = fct_relevel(anomaly, "Consistent", "Possible anomaly")) %>%
+      mutate(response = fct_recode(response, 
+                                   "Congruent" = "Anomaly sooner", 
+                                   "Not congruent" = "Anomaly later")) %>% 
+      mutate(type = rep(type, length(response))) %>% 
+      dplyr:::select(ResponseId, response, anomaly, type) 
+    
+  } else if (type == "gainloss") {  
+    
+    d %>%
+      mutate(response = case_when (
+        fc == 0 & sc == 0 ~ "Anomaly sooner",
+        fc == 1 & sc == 0 ~ "No anomaly later",
+        fc == 0 & sc == 1 ~ "No anomaly sooner",
+        fc == 1 & sc == 1 ~ "Anomaly later")) %>% 
+      mutate (response = as.factor(response)) %>% 
+      mutate(anomaly = case_when(
+        response == "Anomaly later" ~ "Possible anomaly",
+        response == "Anomaly sooner" ~ "Possible anomaly",
+        response == "No anomaly later" ~ "Consistent",
+        response == "No anomaly sooner" ~ "Consistent"
+      )) %>% 
+      mutate(anomaly = fct_relevel(anomaly, "Consistent", "Possible anomaly")) %>% 
+      mutate(response = fct_recode(response, 
+                                   "Congruent" = "Anomaly sooner", 
+                                   "Not congruent" = "Anomaly later")) %>%
+      mutate(type = rep(type, length(response))) %>% 
+      dplyr:::select(ResponseId, response, anomaly, type) 
+    
+  } 
+} 
+```
+
+
+```{r}
+dat_items <- 
+  data_copy %>%
+  arrange(ResponseId) %>% 
+  mutate(amount_later16 = case_when(
+    q2 == 1 & q5 == 0 ~ 550,
+    q3 == 1 ~ 600,
+    q4 == 0 | q4 == 1 ~ 750,
+    q5 == 1 & q6 == 0 ~ 510,
+    q6 == 1 ~ 505)) %>% 
+  
+  mutate(amount_later17 = case_when(
+    q2 == 1 & q5 == 0 ~ 600,
+    q3 == 1 ~ 700,
+    q4 == 1 | q4 == 0 ~ 1000,
+    q5 == 1 & q6 == 0 ~ 520,
+    q6 == 0 ~ 510)) %>% 
+  
+  
+  mutate(amount_later18 = case_when(
+    amount_later16 == 505  ~ 505,
+    amount_later16 == 510  ~ 510,
+    amount_later16 == 550  ~ 550,
+    amount_later16 == 600  ~ 600,
+    amount_later16 == 750  ~ 750
+  )) %>% 
+  
+  mutate(amount_later19 = case_when(
+    amount_later16 == 505  ~ 505,
+    amount_later16 == 510  ~ 510,
+    amount_later16 == 550  ~ 550,
+    amount_later16 == 600  ~ 600,
+    amount_later16 == 750  ~ 750
+  )) %>% 
+  
+  pivot_longer(q2:q18, 
+               names_to = c("question")) %>% 
+  
+  mutate (amount_later = case_when(
+    question == "q2" | question == "q7" ~ 550,
+    question == "q3" | question == "q8" ~ 600,
+    question == "q4" | question == "q9" ~ 750,
+    question == "q5" | question == "q10"~ 510,
+    question == "q6" | question == "q11"~ 505,
+    question == "q12" ~ 5500,
+    question == "q13" ~ 6000,
+    question == "q14" ~ 7500,
+    question == "q15" ~ 5100,
+    question == "q16" ~ 5050,
+    question == "q17" ~ amount_later16)) %>% 
+
+  mutate (question = paste("Q",rep(1:ncol(select(data_copy, q2:"q18")), nrow(data_copy)), sep ="")) %>%
+  mutate (question_num = as.numeric(gsub("Q", "", question))) %>% 
+  
+  mutate ( block = case_when(
+    question_num < 6 ~ "block1",
+    question_num >= 6 & question_num < 11 ~ "block2",
+    question_num >= 11 & question_num < 16 ~ "block3",
+    question_num == 16 ~ "anom1",
+    question_num == 17 ~ "anom2",  # Common difference
+    # question_num == 18 ~ "anom3",
+    # question_num == 19 ~ "anom3",
+  )) %>% 
+
+    mutate (choice = case_when(
+    is.na(value) ~ NA_real_,
+    value == 0 ~ 0,
+    value == 1 ~ 1,
+    TRUE  ~ 1
+  )) %>% 
+  
+  rename(choice_text = "value") %>% 
+  relocate(choice_text, .after = choice) %>%
+  
+  select(-amount_later16, -amount_later17, -amount_later18, -amount_later19) %>%
+  drop_na(choice) %>% 
+  mutate_if(is.character,as.factor)
+
+
+
+presbias <- as.numeric(get_latest_answer(dat_items, 6)$choice != get_second_choices(dat_items,"Q16"))
+absolmag <- as.numeric(get_latest_answer(dat_items, 6)$choice != as.numeric(get_latest_answer(dat_items, 13)$choice))
+gainloss <- as.numeric(get_latest_answer(dat_items, 6)$choice == as.numeric(get_latest_answer(dat_items, 11)$choice))
+delayspeed <- as.numeric(get_latest_answer(dat_items, 6)$choice != get_second_choices(dat_items,"Q17"))
+
+anomalies_data <- list()
+
+## We apply the function fixer_anom to estimate whether the anomalies are observed and whether those are consistent with the theory or not.
+## Given a first and a second set of responses, plus an ID identifier, it will classify the pattern of responses in anomaly/not anomaly and in the first case, whether it is consistent or not.
+## In the second case (not anomaly), it will also inform whether the first decision was a sooner or a later choice.
+
+anomalies_data[[1]] <- fixer_anoms (data.frame(fc = get_latest_answer(dat_items, 6)$choice,
+                                              sc =  get_second_choices(dat_items,"Q16"),
+                                              ResponseId = unique(dat_items$ResponseId)), type = "presbias")
+
+anomalies_data[[2]] <- fixer_anoms (data.frame(fc = get_latest_answer(dat_items, 6)$choice,
+                                              sc =  as.numeric(get_latest_answer(dat_items, 16)$choice),
+                                              ResponseId = unique(dat_items$ResponseId)), type = "absolmag")
+
+anomalies_data[[3]] <- fixer_anoms (data.frame(fc = get_latest_answer(dat_items, 6)$choice,
+                                              sc =  as.numeric(get_latest_answer(dat_items, 11)$choice),
+                                              ResponseId = unique(dat_items$ResponseId)), type = "gainloss")
+
+anomalies_data[[4]] <- fixer_anoms (data.frame(fc =  get_latest_answer(dat_items, 6)$choice,
+                                              sc =  get_second_choices(dat_items,"Q18"),
+                                              ResponseId = unique(dat_items$ResponseId)), type = "delay")
+
+
+anomalies_congruent <- anomalies_data %>% 
+  
+  ### We are only interested in individual responses
+  reduce(left_join, by = "ResponseId") %>%
+  rename ( "presbias" = "response.x",
+           "absolmag" = "response.y",
+           "gainloss" = "response.x.x",
+           "delayspeed" = "response.y.y") %>% 
+  
+  select(ResponseId, presbias, absolmag, gainloss, delayspeed) %>% 
+  mutate_at(vars(presbias, absolmag, gainloss, delayspeed),
+            funs(case_when(
+              . == "Congruent" ~ 1,
+              TRUE ~ 0)))
+
+##  We calculate the temporal discount scores from responses to each block plus items Q17 to Q19 (anomalies)
+### Careful with reversed scores when estimating the scores
+
+scores <- get_scores(get_latest_answer(dat_items, 6))$score +
+  5 - get_scores(get_latest_answer(dat_items, 11))$score +
+  get_scores(get_latest_answer(dat_items, 16))$score +
+  1 - get_second_choices(dat_items, "Q16") +
+  1 - get_second_choices(dat_items, "Q17")
+
+### We merge these scores and the anomalies rates with the original dataset 
+q <- dat_items %>% 
+  count(ResponseId) %>% 
+  arrange()        
+
+dat_items <- dat_items %>% 
+  arrange(ResponseId) %>%
+  mutate (score = rep(scores, q$n),
+          presbias = rep(anomalies_congruent$presbias, q$n),
+          absolmag = rep(anomalies_congruent$absolmag, q$n),
+          gainloss = rep(anomalies_congruent$gainloss, q$n),
+          delayspeed = rep(anomalies_congruent$delayspeed, q$n))
+
+dat_unique <- dat_items %>% 
+  distinct(ResponseId, .keep_all = TRUE) %>% 
+  select(-question, -amount_later, -question_num, -block, -choice, -choice_text)
+
+#rm(q,scores, presbias, absolmag, gainloss, delayspeed, subaddit, est_scores)
+```
+
+```{r}
 
 # Calculating temporal discounting score and anomalies
 
@@ -226,21 +621,6 @@ data_copy[, c(2:18)] <- lapply(data_copy[, c(2:18)], change_values)
 ```
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ```{r}
 get_scores <- function (x) {
   
@@ -378,189 +758,6 @@ fixer_anom <- function (d, type = NULL){
     
   }
 } 
-
-
-### We clean the data an adapt the questions to be processed in future analysis. We take into consideration that different individuals see a different number of questions with different options depending on their own decisions (i.e., we have an adaptative survery). For each question see, we compute individual choices (i.e., 0 = sooner option chosen, 1 = later option chosen). We create a new dataset (dat_item) including item characteristics (i.e., amount presented for the sooner and later rewards, delay presented for sooner and later rewards, question identifier, block identifier). 
-
-    Gain550 = "Q2",
-    Gain600 = "Q3",
-    Gain750 = "Q4",
-    Gain510 = "Q5",
-    Gain505 = "Q6",
-    Pay550 = "Q7",
-    Pay600 = "Q8",
-    Pay750 = "Q9",
-    Pay510 = "Q10",
-    Pay505 = "Q11",
-    Gain5500 = "Q12",
-    Gain6000 = "Q13",
-    Gain7500 = "Q14",
-    Gain5100 = "Q15",
-    Gain5050 = "Q16",
-
-
-dat_item <- 
-  dat %>% 
-  arrange(ResponseId) %>%   
-  mutate(amount_later16 = case_when(
-    Gain550 = 1 & Gain510 = 0 ~ 550,
-    Gain600 = 1 ~ 600,
-    Gain750 = 0 | Gain750 = 1 ~ 750,
-    Gain510 = 1 & Gain505 = 0 ~ 510,
-    Gain505 = 1 ~ 505)) %>% 
-  
-  mutate(amount_later17 = case_when(
-    Gain550 == "Receiving $550 in 12 months" & Gain510 = 0 ~ 600,
-    Gain600 == "Receiving $600 in 12 months" ~ 700,
-    Gain750 == "Receiving $750 in 12 months" | Gain750 = 0 ~ 1000,
-    Gain510 == "Receiving $510 in 12 months" & Gain505 = 0 ~ 520,
-    Gain505 == "Receiving $505 in 12 months" ~ 510)) %>% 
-  
-  
-  mutate(amount_later18 = case_when(
-    amount_later16 == 505  ~ 505,
-    amount_later16 == 510  ~ 510,
-    amount_later16 == 550  ~ 550,
-    amount_later16 == 600  ~ 600,
-    amount_later16 == 750  ~ 750
-  )) %>% 
-  
-  mutate(amount_later19 = case_when(
-    amount_later16 == 505  ~ 505,
-    amount_later16 == 510  ~ 510,
-    amount_later16 == 550  ~ 550,
-    amount_later16 == 600  ~ 600,
-    amount_later16 == 750  ~ 750
-  )) %>% 
-  
-  pivot_longer(Gain550:Delay_speedup_2, 
-               names_to = c("question")) %>%
-  
-  mutate(delay_sooner = rep(c(rep(0, 15), 12, 0, 0, 0), length(unique(ResponseId))),
-          delay_later  = rep(c(rep(12, 15), 24, 24, 12, 12),length(unique(ResponseId))),
-          amount_sooner = rep(c(rep(500, 10), 
-                                rep(5000, 5),
-                                rep(500, 4)), length(unique(ResponseId)))) %>%
-  
-  mutate (amount_later = case_when(
-    question == "Gain550" | question == "Pay550" ~ 550,
-    question == "Gain600" | question == "Pay600" ~ 600,
-    question == "Gain750" | question == "Pay750" ~ 750,
-    question == "Gain510" | question == "Pay510"~ 510,
-    question == "Gain505" | question == "Pay505"~ 505,
-    question == "Gain5500" ~ 5500,
-    question == "Gain6000" ~ 6000,
-    question == "Gain7500" ~ 7500,
-    question == "Gain5100" ~ 5100,
-    question == "Gain5050" ~ 5050,
-    question == "Common_difference" ~ amount_later16,
-    question == "Subadditivity" ~ amount_later17,
-    question == "Delay_speedup_1" ~ amount_later18,
-    question == "Delay_speedup_2" ~ amount_later19
-  )) %>%
-  
-  
-  mutate (question = paste("Q",rep(1:ncol(select(dat, Gain550:"Delay_speedup_2")), nrow(dat)), sep ="")) %>%
-  mutate (question_num = as.numeric(gsub("Q", "", question))) %>%
-  
-  mutate ( block = case_when(
-    question_num < 6 ~ "block1",
-    question_num >= 6 & question_num < 11 ~ "block2",
-    question_num >= 11 & question_num < 16 ~ "block3",
-    question_num == 16 ~ "anom1",
-    question_num == 17 ~ "anom2",
-    question_num == 18 ~ "anom3",
-    question_num == 19 ~ "anom3",
-  )) %>% 
-  
-  mutate (choice = case_when(
-    is.na(value) ~ NA_real_,
-    str_detect(value, "500 right now") ~ 0,
-    str_detect(value, "5000 right now") ~ 0,
-    str_detect(value, "5500 in 12 months") ~ 1,
-    str_detect(value, "7500 in 12 months") ~ 1,
-    str_detect(value, "500 in 12 months") ~ 0,
-    str_detect(value, "Reduce") ~ 0,
-    TRUE  ~ 1
-  )) %>% 
-  
-  rename(choice_text = "value") %>% 
-  relocate(choice_text, .after = choice) %>%
-  
-  select(-amount_later16, -amount_later17, -amount_later18, -amount_later19) %>%
-  drop_na(choice) %>% 
-  mutate_if(is.character,as.factor)
-
-###############################
-# 2. Computing anomalies/scores
-###############################
-
-## We estimate the anomalies rates for the five anomalies (present bias = presbias; absolute magnitude = absolmag, gain-loss asymmetry = gainloss; delay-speedup = delayspeed; subadditivity = subaddit). 
-## We use answers to the three baseline sets of questions plus the answers to the common difference, subadditivity, and delay-speedup items to compute the temporal discount scores.
-
-## Computing the rates of the five anomalies
-
-presbias <- as.numeric(get_latest_answer(dat_item, 6)$choice != get_second_choices(dat_item,"Q16"))
-absolmag <- as.numeric(get_latest_answer(dat_item, 6)$choice != as.numeric(get_latest_answer(dat_item, 16)$choice))
-gainloss <- as.numeric(get_latest_answer(dat_item, 6)$choice == as.numeric(get_latest_answer(dat_item, 11)$choice))
-delayspeed <- as.numeric(get_latest_answer(dat_item, 6)$choice != get_second_choices(dat_item,"Q19"))
-
-
-anomalies_data <- list()
-
-anomalies_data[[1]] <- fixer_anom (data.frame(fc = get_latest_answer(dat_item, 6)$choice,
-                                              sc =  get_second_choices(dat_item,"Q16"),
-                                              ResponseId = unique(dat_item$ResponseId)), type = "presbias")
-
-anomalies_data[[2]] <- fixer_anom (data.frame(fc = get_latest_answer(dat_item, 6)$choice,
-                                              sc =  as.numeric(get_latest_answer(dat_item, 16)$choice),
-                                              ResponseId = unique(dat_item$ResponseId)), type = "absolmag")
-
-anomalies_data[[3]] <- fixer_anom (data.frame(fc = get_latest_answer(dat_item, 6)$choice,
-                                              sc =  as.numeric(get_latest_answer(dat_item, 11)$choice),
-                                              ResponseId = unique(dat_item$ResponseId)), type = "gainloss")
-
-anomalies_data[[4]] <- fixer_anom (data.frame(fc =  get_latest_answer(dat_item, 6)$choice,
-                                              sc =  get_second_choices(dat_item,"Q19"),
-                                              ResponseId = unique(dat_item$ResponseId)), type = "delay")
-
-anomalies_congruent <- anomalies_data %>% 
-  
-  ### We are only interested in individual responses
-  reduce(left_join, by = "ResponseId") %>%
-  rename ( "presbias" = "response.x",
-           "absolmag" = "response.y",
-           "gainloss" = "response.x.x",
-           "delayspeed" = "response.y.y",
-           "subaddit" = "response") %>% 
-  
-  select(ResponseId, presbias, absolmag, gainloss, delayspeed, subaddit) %>% 
-  mutate_at(vars(presbias, absolmag, gainloss, delayspeed, subaddit),
-            funs(case_when(
-              . == "Congruent" ~ 1,
-              TRUE ~ 0)))
-
-scores <- get_scores(get_latest_answer(dat_item, 6))$score +
-  5 - get_scores(get_latest_answer(dat_item, 11))$score +
-  get_scores(get_latest_answer(dat_item, 16))$score +
-  1-get_second_choices(dat_item, "Q16") +
-  1-get_second_choices(dat_item, "Q17") +
-  get_second_choices(dat_item, "Q18") +
-  get_second_choices(dat_item, "Q19")
-
-### We merge these scores and the anomalies rates with the original dataset 
-q <- dat_item %>% 
-  count(ResponseId) %>% 
-  arrange()        
-
-dat_item <- dat_item %>% 
-  arrange(ResponseId) %>%
-  mutate (score = rep(scores, q$n),
-          presbias = rep(anomalies_congruent$presbias, q$n),
-          absolmag = rep(anomalies_congruent$absolmag, q$n),
-          gainloss = rep(anomalies_congruent$gainloss, q$n),
-          delayspeed = rep(anomalies_congruent$delayspeed, q$n),
-          subaddit = rep(anomalies_congruent$subaddit, q$n))
 ```
 
 
@@ -662,6 +859,29 @@ ggplot(data_copy, aes(x = q19)) +
                                 "6 months",
                                 "9 months",
                                 "12 months"))
+
+ggplot(data_copy, aes(x = q2)) +
+  geom_bar() +
+  labs(title = "Q1",
+       x = "",
+       y = "# of responders") +
+  geom_text(aes(label = ..count..), 
+            stat = 'count', vjust = -0.5, 
+            color = "black", size = 5, 
+            family = "Garamond") +
+  theme_classic()
+
+ggplot(data_copy, aes(x = q18)) +
+  geom_bar() +
+  labs(title = "Q1",
+       x = "",
+       y = "# of responders") +
+  geom_text(aes(label = ..count..), 
+            stat = 'count', vjust = -0.5, 
+            color = "black", size = 5, 
+            family = "Garamond") +
+  theme_classic()
+
 ```
 
 

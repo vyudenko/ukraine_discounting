@@ -183,16 +183,6 @@ Individuals exposed to violent conflict may experience a range of health-related
 There are studies that show that temporal discounting is positively associated with poorer mental and physical health [@lawless2013; @dellavigna2006].
 In particular, impatience has been linked with smoking, excessive drinking [@mackillop2010], and other addictive behavior.
 
-The prevailing mental health issue during the post-war period is post-traumatic stress disorder (PTSD) (references).
-While trauma can be a devastating experience, it is important to recognize that it can also be an opportunity for growth and transformation.
-PTG is often associated with the concept of resilience, which refers to the ability to bounce back from adversity.
-While resilience is an important trait to have, PTG takes it one step further by suggesting that individuals can actually benefit from traumatic experiences in unexpected ways (Dell'Osso et al., 2022; Jin et al., 2014).
-However, not everyone is affected by war the same way: some bounce back and exhibit positive psychological changes that can occur after experiencing a traumatic event, which are referred to as Post Traumatic Stress (PTG).
-It was found that people living in war-torn areas exhibit moderate levels of PTG.
-Women are more prone to PTG than men; younger and older participants show higher levels of PTG, while middle-aged participants exhibit lower levels; and financial security increases PTG.
-Presence in Ukraine increases personal strength, while living outside of Ukraine increases the possibilities for new PTG strategies.
-Trauma exposure during the war does not increase levels of PTG Post-Traumatic Growth (PTG)
-
 Having these two additional perspectives on financial and health outcomes are crucial in our paper, as our contribution will lie in combining these aspects in explaining war's influence on temporal discounting of affected individuals.
 Specifically, we will answer if there is an interplay between specific war experiences and individual's time preferences.
 
@@ -218,67 +208,13 @@ A psychology literature suggests that conflicts and natural disasters alter expo
 
 We expect that there be an association between temporal discounting, namely present bias and property damage, as suggested by [@page2014]; a strong correlation between physical damage and loss of a close person with risky behavior [@bucciol2015], despite the finding of weak or insignificant relationship by @imas2015 and @voors2012; the distribution of temporal discounting scores will not be significantly different from the study by [@ruggeri2022], because we suspect that exposure to violence (war) would have a significant effect on the individual, but not on the overall population, as suggested by [@meier2015].
 
-Switch between longer time period
-
-Sign effect
+***\<text on Switch between longer time period and Sign effect\>***
 
 [@ventre2023] The interval effect, which suggests the situation in which shorter intervals bring more significant discounts per unit time
 
 It is reasonable to assume that the population that lives closer to the conflict zone will be affected more by the conflict than the residents in remoter regions.
 
-### H2. Negative financial shock is positively associated with discounting
-
-War brings about destruction.
-Even people not directly affected by war (not involved in combat or experiencing daily bombing), may suffer from its consequences.
-Military violence doesn't just affect the mental health of civilians living in conflict zones [@cesur2013], but also of those who experience it through daily stressors such as changes in physical health and financial situation, the destruction of social networks and the mass displacement of the civilian population [@miller2010].
-
-According to [@pres-rel] subjective evaluation of Ukrainian's FWB has barely changed and is on the pre-invasion level.
-This could have multiple explanations:
-
-a\) community FWB has decreased more than individual FWB, because everyone experiences blackouts, cuts in salaries, damages due to russian aggression[^7].
-[@m.o.2021] supports this claim.
-
-[^7]: That is if it is just me who got poorer than I would significantly change my financial attitudes, if everyone (around me) became poorer than I wouldn't feel it as strongly - they have it just as bad after all.
-
-b\) received social support, which is consistent with [@theinte2021] and results of [@voors2012], who find the rise of pro-social behavior in the aftermath of an emergency.
-
-c\) individuals have lower expectations \[source?\]
-
-In the present study, we expect that negative evaluation of one's own financial wellbeing will be a strong predictor of temporal discounting.
-[@ruggeri2022] indicates that anyone facing a negative financial environment---even with a better income within that environment---is likely to make decisions that prioritize immediate clarity over future uncertainty.
-Similar result is found by @mellis2018 who asked participants to think about neutral (job transfer) or negative income shock (losing hob) before completing a task on delay discounting, and @bufe2022 who, using data from two-wave survey, find that experience of an income shock between survey waves was associated with a large decline in subjective FWB, while the experience of an expense shock was associated with a more modest decline.
-We also hypothesize that objective FWB is also a strong predictor of individual's discounting, as suggested by [@epper2020], and individuals with outstanding debt will exhibit steeper discounting, as per [@ikeda2015].
-
-### H3. Poor mental health is associated with higher discounting
-
-Worsened mental and physical health and other psychological trauma has been shown to affect behavior and lead to costly, suboptimal decision-making long after the traumatic experience has passed.
-These and other second-order repercussions of exposure to violence are likely dwarfed by the direct effects in the immediate aftermath [@rybinska2023], but in the long run, they are part of what determines when and how recovery occurs.
-If violence changes people's preferences, it will also change the effects of policies implemented on behalf of those people [@imas2015].
-Research in psychology has demonstrated that exposure to violence and other trauma has complex, deleterious effects on both mental and physical health [@singh2021; @rybinska2022 @osokina2023].
-There are also studies that critique one-sided view of negative effects of extreme experiences, they instead focus on resilience, an ability to bounce back after traumatic event.
-
-The prevailing mental health issue during the post-war period is post-traumatic stress disorder (PTSD) (references).
-While trauma can be a devastating experience, it is important to recognize that it can also be an opportunity for growth and transformation.
-PTG is often associated with the concept of resilience, which refers to the ability to bounce back from adversity.
-While resilience is an important trait to have, PTG takes it one step further by suggesting that individuals can actually benefit from traumatic experiences in unexpected ways (Dell'Osso et al., 2022; Jin et al., 2014).
-However, not everyone is affected by war the same way: some bounce back and exhibit positive psychological changes that can occur after experiencing a traumatic event, which are referred to as Post Traumatic Stress (PTG).
-It was found that people living in war-torn areas exhibit moderate levels of PTG.
-Women are more prone to PTG than men; younger and older participants show higher levels of PTG, while middle-aged participants exhibit lower levels; and financial security increases PTG.
-Presence in Ukraine increases personal strength, while living outside of Ukraine increases the possibilities for new PTG strategies.
-Trauma exposure during the war does not increase levels of PTG Post-Traumatic Growth (PTG)
-
-This branch of literature suggests that even genuinely traumatic events can have both positive and negative effects on an individual and subjective evaluation must be included.
-
-Consistent with research we hypothesize that poorer mental health will be associated with steeper discounting [@löckenhoff2011],
-
-# Chapter 4. Data
-
-To study the hypotheses we conduct a survey largely adapted from multiple papers.
-Questions on temporal discounting are adapted from [@ruggeri2022], mental health - [@ware1996], and war experiences - [@fleeing].
-First respondents answer a set of adaptive MCQ, then questions on financial situation, followed questions about mental health, war experiences, and finish with a set of socio-demographic questions.
-
-Below, we describe each of our experimental treatments in detail.
-Complete experimental instructions can be found in the Appendix.
+\<how will we measure temporal discounting and war exposure\>
 
 ## 4.1 Measuring Temporal Discounting
 
@@ -314,7 +250,42 @@ Second, we have set the periods to 3 months.
 As it should strike the balance between uncertain future and relatively certain present.
 Full list of questions on temporal discounting can be found in Appendix.
 
-## 4.2 Measuring Financial Wellbeing
+## 4.4 Measuring War Experience
+
+There were several attempts to study war-related experiences.
+Most recent one by @trujillo2021 studies Armed Combat Experience with yes/no questions about direct and indirect extreme experience.
+@karam1999 acknowledges the importance of accounting for frequency and intensity of war-related experiences, relatedness to victim, and witnessing the event, despite its superiority in measuring war experiences, its size is too large for the purposes of the current study.
+In measuring war experience we take into account Ukrainian context and importance of capturing self-assessment of these experiences: "Have you suffered from the following as a result of your experiences?".
+We use 2 multiple choice questions adapted from the survey @fleeing by adding questions related to relative's involvement in active combat and on fleeing active combat.
+
+***\<might add more\>***
+
+### H2. Negative financial shock is positively associated with discounting
+
+War brings about destruction.
+Even people not directly affected by war (not involved in combat or experiencing daily bombing), may suffer from its consequences.
+Military violence doesn't just affect the mental health of civilians living in conflict zones [@cesur2013], but also of those who experience it through daily stressors such as changes in physical health and financial situation, the destruction of social networks and the mass displacement of the civilian population [@miller2010].
+
+According to [@pres-rel] subjective evaluation of Ukrainian's FWB has barely changed and is on the pre-invasion level.
+This could have multiple explanations:
+
+a\) community FWB has decreased more than individual FWB, because everyone experiences blackouts, cuts in salaries, damages due to russian aggression[^7].
+[@m.o.2021] supports this claim.
+
+[^7]: That is if it is just me who got poorer than I would significantly change my financial attitudes, if everyone (around me) became poorer than I wouldn't feel it as strongly - they have it just as bad after all.
+
+b\) received social support, which is consistent with [@theinte2021] and results of [@voors2012], who find the rise of pro-social behavior in the aftermath of an emergency.
+
+c\) individuals have lower expectations ***\[source?\]***
+
+In the present study, we expect that negative evaluation of one's own FWB will be a strong predictor of temporal discounting.
+[@ruggeri2022] indicates that anyone facing a negative financial environment---even with a better income within that environment---is likely to make decisions that prioritize immediate clarity over future uncertainty.
+Similar result is found by @mellis2018 who asked participants to think about neutral (job transfer) or negative income shock (losing hob) before completing a task on delay discounting, and @bufe2022 who, using data from two-wave survey, find that experience of an income shock between survey waves was associated with a large decline in subjective FWB, while the experience of an expense shock was associated with a more modest decline.
+We also hypothesize that objective FWB is also a strong predictor of individual's discounting, as suggested by [@epper2020], and individuals with outstanding debt will exhibit steeper discounting, as per [@ikeda2015].
+
+\<How we will measure finance shock\>
+
+## 4.2 Measuring Financial Well-being
 
 To measure financial well-being, we use both objective and subjective aspects.
 Subjective FWB is evaluated with 2 self-reported variables.
@@ -327,32 +298,53 @@ Real income can fluctuate, because of uncertain and changing economic situation.
 Expectations are more sensitive to the arrival of new information about the conflict (including the news from front line, influence of propaganda, information warfare, etc.) and may shape the financial decisions of individuals.
 This approach should capture multiple aspects of FWB and provide robust estimation of its effects on temporal discounting.
 
+### H3. Poor mental health is associated with higher discounting
+
+Worsened mental and physical health and other psychological trauma has been shown to affect behavior and lead to costly, suboptimal decision-making long after the traumatic experience has passed.
+These and other second-order repercussions of exposure to violence are likely dwarfed by the direct effects in the immediate aftermath [@rybinska2023], but in the long run, they are part of what determines when and how recovery occurs.
+If violence changes people's preferences, it will also change the effects of policies implemented on behalf of those people [@imas2015].
+Research in psychology has demonstrated that exposure to violence and other trauma has complex, deleterious effects on both mental and physical health [@singh2021; @rybinska2022 @osokina2023].
+There are also studies that critique one-sided view of negative effects of extreme experiences, they instead focus on resilience, an ability to bounce back after traumatic event.
+
+[The prevailing mental health issue during the post-war period is post-traumatic stress disorder (PTSD) (references). While trauma can be a devastating experience, it is important to recognize that it can also be an opportunity for growth and transformation. PTG is often associated with the concept of resilience, which refers to the ability to bounce back from adversity. While resilience is an important trait to have, PTG takes it one step further by suggesting that individuals can actually benefit from traumatic experiences in unexpected ways (Dell'Osso et al., 2022; Jin et al., 2014). However, not everyone is affected by war the same way: some bounce back and exhibit positive psychological changes that can occur after experiencing a traumatic event, which are referred to as Post Traumatic Stress (PTG). It was found that people living in war-torn areas exhibit moderate levels of PTG. Women are more prone to PTG than men; younger and older participants show higher levels of PTG, while middle-aged participants exhibit lower levels; and financial security increases PTG. Presence in Ukraine increases personal strength, while living outside of Ukraine increases the possibilities for new PTG strategies. Trauma exposure during the war does not increase levels of PTG Post-Traumatic Growth (PTG)]{.underline} ***\<will rewrite this paragraph, preserving the general flow of my thought\>***
+
+This branch of literature suggests that even genuinely traumatic events can have both positive and negative effects on an individual and subjective evaluation must be included.
+
+Consistent with research we hypothesize that poorer mental health will be associated with steeper discounting [@löckenhoff2011],
+
+\<how to measure mental health\>
+
 ## 4.3 Measuring Mental Health
 
 As there are no feasible ways to measure objective mental health, we measure subjective health with SF-12 [@ware1996], a widely used and well-validated measure which yields separate scores for mental and physical health[^8], which is widely used in behavioral sciences [@löckenhoff2011].
-We use 3 Likert-type items related to mental health: "In the last 4 weeks, how often have you been feeling blue/calm/full of energy?" **The dependent variable is a sum \_\_\_\_\_**
+We use 3 Likert-type items related to mental health: "In the last 4 weeks, how often have you been feeling blue/calm/full of energy?" ***The dependent variable is a sum \_\_\_\_\_***
 
 [^8]: In our study we will focus only on mental health and omit physical health.
 
-## 4.4 Measuring War Experience
-
-There were several attempts to study war-related experiences.
-Most recent one by @trujillo2021 studies Armed Combat Experience with yes/no questions about direct and indirect extreme experience.
-@karam1999 acknowledges the importance of accounting for frequency and intensity of war-related experiences, relatedness to victim, and witnessing the event, despite its superiority in measuring war experiences, its size is too large for the purposes of the current study.
-In measuring war experience we take into account Ukrainian context and importance of capturing self-assessment of these experiences: "Have you suffered from the following as a result of your experiences?".
-We use 2 multiple choice questions adapted from the survey @fleeing by adding questions related to relative's involvement in active combat and on fleeing active combat.
-
-## 4.5 Control Variables
+## Control Variables
 
 In line with the existing literature, a range of demographic and socio-economic variables is included as explanatory variables (gender, marital status, kids, education, age, occupation).
 
-## 4.6 Preliminary analysis of the data
+***\<should I add more description here?\>***
+
+# Chapter 4. Data
+
+To study the hypotheses we conduct a survey largely adapted from multiple papers.
+Questions on temporal discounting are adapted from [@ruggeri2022], mental health - [@ware1996], and war experiences - [@fleeing].
+First respondents answer a set of adaptive MCQ, then questions on financial situation, followed questions about mental health, war experiences, and finish with a set of socio-demographic questions.
+
+Below, we describe each of our experimental treatments in detail.
+Complete experimental instructions can be found in the Appendix.
 
 The data collected during the study were subjected to statistical processing using \_\_\_\_\_\_ methods of analysis.
 Statistical analysis was performed using R (version ***). The study included*** participants (age M = ***) --** males and* \_\_ females.
 For estimating the size of the effect of age, we outlined the following age groups: youth (N = , M = , age range --), young adults (N = , M = , age range --), adults (N = , M = , age range --), and middle-aged (N = , M = , age range --).
 
 EDA and descriptive statistics of the experiment
+
+***\<descriptive statistics, distributions will go here\>***
+
+***\<approx 1-1.5 pages\>***
 
 # Chapter 5. Results
 
@@ -373,6 +365,8 @@ An alternative explanation therefore is that the impatient individuals may have 
 5.3.
 
 # Chapter 6. Conclusions and Recommendations
+
+***This research has look into.....***
 
 ## Study Limitations
 
@@ -397,7 +391,7 @@ An alternative explanation therefore is that the impatient individuals may have 
 
 Survey can be found via link
 
-# Leftovers
+# Leftovers & scraps
 
 This phenomenon, also referred to as delay discounting, is a very common occurrence in life when having to weigh a choice between two options whose outcomes are given at different times in the future.
 The question also arises: what factors influence temporal discounting?
@@ -493,3 +487,13 @@ For this we must measure how these events affected the person in question.
 (Coupe and Obrizan 2016) look at how war affected happiness in Ukraine.
 This paper doesn't study financial decisions and intertemporal discounting, however it was useful in approaching questions about experience of war.
 Another paper by the same authors (Coupé and Obrizan 2016) which studies violence and political outcomes in Ukraine allows us to categorize damage caused by war.
+
+The prevailing mental health issue during the post-war period is post-traumatic stress disorder (PTSD) (references).
+While trauma can be a devastating experience, it is important to recognize that it can also be an opportunity for growth and transformation.
+PTG is often associated with the concept of resilience, which refers to the ability to bounce back from adversity.
+While resilience is an important trait to have, PTG takes it one step further by suggesting that individuals can actually benefit from traumatic experiences in unexpected ways (Dell'Osso et al., 2022; Jin et al., 2014).
+However, not everyone is affected by war the same way: some bounce back and exhibit positive psychological changes that can occur after experiencing a traumatic event, which are referred to as Post Traumatic Stress (PTG).
+It was found that people living in war-torn areas exhibit moderate levels of PTG.
+Women are more prone to PTG than men; younger and older participants show higher levels of PTG, while middle-aged participants exhibit lower levels; and financial security increases PTG.
+Presence in Ukraine increases personal strength, while living outside of Ukraine increases the possibilities for new PTG strategies.
+Trauma exposure during the war does not increase levels of PTG Post-Traumatic Growth (PTG)
