@@ -13,7 +13,7 @@ editor: visual
 
 # Setup
 
-```{r, warning=FALSE, message=FALSE, echo=FALSE}
+```{r libraries, warning=FALSE, message=FALSE, echo=FALSE}
 # loading packages
 library(lattice)
 library(tidyverse)
@@ -30,6 +30,8 @@ library(GPArotation)
 library(ufs)
 library(remotes)
 library(ggplot2)
+library(patchwork)
+library(gt)
 library(ggExtra)
 library(ggthemes)
 library(gtsummary)
@@ -44,7 +46,7 @@ library(haven)
 
 ```
 
-```{r}
+```{r loading data}
 data <- read_sav("data/gradus_data.sav")
 
 colnames(data)[colnames(data) == "intnr"] <- "ResponseId"
@@ -79,7 +81,7 @@ change_values <- function(x) {
 data_copy[, c(2:18)] <- lapply(data_copy[, c(2:18)], change_values)
 ```
 
-```{r}
+```{r functions}
 #######################################
 ######### Stats-related functions #####
 #######################################
@@ -303,8 +305,7 @@ fixer_anoms <- function (d, type = NULL){
 } 
 ```
 
-
-```{r}
+```{r discounting}
 dat_items <- 
   data_copy %>%
   arrange(ResponseId) %>% 
@@ -408,7 +409,7 @@ anomalies_data[[3]] <- fixer_anoms (data.frame(fc = get_latest_answer(dat_items,
                                               ResponseId = unique(dat_items$ResponseId)), type = "gainloss")
 
 anomalies_data[[4]] <- fixer_anoms (data.frame(fc =  get_latest_answer(dat_items, 6)$choice,
-                                              sc =  get_second_choices(dat_items,"Q18"),
+                                              sc =  get_second_choices(dat_items,"Q17"),
                                               ResponseId = unique(dat_items$ResponseId)), type = "delay")
 
 
@@ -456,11 +457,240 @@ dat_unique <- dat_items %>%
 #rm(q,scores, presbias, absolmag, gainloss, delayspeed, subaddit, est_scores)
 ```
 
-```{r}
+```{r data prep}
+data_clean <- data_copy %>%
+  mutate(oblast_before_ua = as.character(as_factor(demo_oblast)),
+         oblast_before_en = fct_recode(oblast_before_ua,
+                                    "Vinnytsia Region" = "Вінницька область",
+                                    "Volyn Region" = "Волинська область",
+                                    "Dnipropetrovsk Region" = "Дніпропетровська область",
+                                    "Donetsk Region" = "Донецька область",
+                                    "Zhytomyr Region" = "Житомирська область",
+                                    "Zakarpattia Region" = "Закарпатська область",
+                                    "Zaporizhzhia Region" = "Запорізька область",
+                                    "Ivano-Frankivsk Region" = "Івано-Франківська область",
+                                    "Kyiv City" = "м. Київ",
+                                    "Kyiv Region" = "Київська область",
+                                    "Kirovohrad Region" = "Кіровоградська область",
+                                    "Luhansk Region" = "Луганська область",
+                                    "Lviv Region" = "Львівська область",
+                                    "Mykolaiv Region" = "Миколаївська область",
+                                    "Odesa Region" = "Одеська область",
+                                    "Poltava Region" = "Полтавська область",
+                                    "Rivne Region" = "Рівненська область",
+                                    "Sumy Region" = "Сумська область",
+                                    "Ternopil Region" = "Тернопільська область",
+                                    "Kharkiv Region" = "Харківська область",
+                                    "Kherson Region" = "Херсонська область",
+                                    "Khmelnytskyi Region" = "Хмельницька область",
+                                    "Cherkasy Region" = "Черкаська область",
+                                    "Chernivtsi Region" = "Чернівецька область",
+                                    "Chernihiv Region" = "Чернігівська область"),
+         age = as.character(as_factor(demo_age_int)),
+         gender_ua = as.character(as_factor(demo_gender)),
+         gender_en = fct_recode(gender_ua,
+                                "Female" = "Жіноча",
+                                "Male" = "Чоловіча"),
+         region_before_ua = as.character(as_factor(demo_region)),
+         region_before_en = fct_recode(region_before_ua,
+                                       "Kyiv City" = "Київ",
+                                       "South" = "Південний",
+                                       "Center" = "Центральний",
+                                       "West" = "Західний",
+                                       "North" = "Північний",
+                                       "East" = "Східний"),
+         city_before_ua = as.character(as_factor(demo_city)),
+         city_before_en = fct_recode(city_before_ua,
+                                        "Kyiv" = "м. Київ",
+                                        "Kherson" = "Херсон",
+                                        "Cherkasy" = "Черкаси",
+                                        "Mukachevo" = "Мукачево",
+                                        "Korosten" = "Коростень",
+                                        "Shostka" = "Шостка",
+                                        "Kremenchuk" = "Кременчук",
+                                        "Energodar" = "Енергодар",
+                                        "Boryspil" = "Бориспіль",
+                                        "Pryluky" = "Прилуки",
+                                        "Zhytomyr" = "Житомир",
+                                        "Nikopol" = "Нікополь",
+                                        "Druzhkivka" = "Дружківка",
+                                        "Zaporizhzhia" = "Запоріжжя",
+                                        "Kamianske" = "Кам'янське",
+                                        "Khmelnytskyi" = "Хмельницький",
+                                        "Kropyvnytskyi" = "Кропивницький",
+                                        "Kharkiv" = "Харків",
+                                        "Odesa" = "Одеса",
+                                        "Lviv" = "Львів"),
+         city_size_before_ua = as.character(as_factor(demo_сity_size)),
+         cit_size_before_en = fct_recode(city_size_before_ua,
+                                         "1 mil.+" = "1 млн.+",
+                                         "500k-1 mil." = "500-1 млн.",
+                                         "100k-500k" = "100-500 тис.",
+                                         "50k-100k" = "50-100 тис."),
+         oblast_moving_ua = as.character(as_factor(oblast_moving)),
+         oblast_moving_en = fct_recode(oblast_moving_ua,
+                                    "Vinnytsia Region" = "Вінницька область",
+                                    "Volyn Region" = "Волинська область",
+                                    "Dnipropetrovsk Region" = "Дніпропетровська область",
+                                    "Donetsk Region" = "Донецька область",
+                                    "Zhytomyr Region" = "Житомирська область",
+                                    "Zakarpattia Region" = "Закарпатська область",
+                                    "Zaporizhzhia Region" = "Запорізька область",
+                                    "Ivano-Frankivsk Region" = "Івано-Франківська область",
+                                    "Kyiv City" = "м. Київ",
+                                    "Kyiv Region" = "Київська область",
+                                    "Kirovohrad Region" = "Кіровоградська область",
+                                    "Luhansk Region" = "Луганська область",
+                                    "Lviv Region" = "Львівська область",
+                                    "Mykolaiv Region" = "Миколаївська область",
+                                    "Odesa Region" = "Одеська область",
+                                    "Poltava Region" = "Полтавська область",
+                                    "Rivne Region" = "Рівненська область",
+                                    "Sumy Region" = "Сумська область",
+                                    "Ternopil Region" = "Тернопільська область",
+                                    "Kharkiv Region" = "Харківська область",
+                                    "Kherson Region" = "Херсонська область",
+                                    "Khmelnytskyi Region" = "Хмельницька область",
+                                    "Cherkasy Region" = "Черкаська область",
+                                    "Chernivtsi Region" = "Чернівецька область",
+                                    "Chernihiv Region" = "Чернігівська область"),
+         city_moving_en = fct_recode(city_moving,
+                                        "Drohobych" = "Дрогобич",
+                                        "Lutsk" = "Луцьк",
+                                        "Ivano-Frankivsk" = "Івано-Франківськ",
+                                        "Vinnytsia" = "Вінниця",
+                                        "Lviv" = "Львів",
+                                        "Kyiv" = "м. Київ",
+                                        "Resided in village / settlement" = "Проживав(ла) в селищі / селі",
+                                        "Poltava" = "Полтава",
+                                        "Zaporizhzhia" = "Запоріжжя",
+                                        "Radomyshl" = "Радомишль",
+                                        "Khmelnytskyi" = "Хмельницький",
+                                        "Smila" = "Сміла",
+                                        "Odesa" = "Одеса",
+                                        "Mukachevo" = "Мукачево",
+                                        "Horishni Plavni" = "Горішні Плавні",
+                                        "Ladyzhin" = "Ладижин",
+                                        "Dnipro" = "Дніпро",
+                                        "Ternopil" = "Тернопіль",
+                                        "Yaremche" = "Яремче",
+                                        "Kovel" = "Ковель",
+                                        "Netishyn" = "Нетішин",
+                                        "Nizhyn" = "Ніжин",
+                                        "Kaniv" = "Канів",
+                                        "Nikopol" = "Нікополь",
+                                        "Oleksandriia" = "Олександрія",
+                                        "Volochysk" = "Волочиськ",
+                                        "Podilsk" = "Подільськ",
+                                        "Kremenchuk" = "Кременчук",
+                                        "Resided in SMT" = "Проживав(ла) в СМТ",
+                                        "Berdychiv" = "Бердичів",
+                                        "Sumy" = "Суми",
+                                        "Pomichna" = "Помічна",
+                                        "Rivne" = "Рівне",
+                                        "Irshava" = "Іршава",
+                                        "Svalyava" = "Свалява",
+                                        "Chervonohrad" = "Червоноград",
+                                        "Kolomyia" = "Коломия",
+                                        "Svitlovodsk" = "Світловодськ",
+                                        "Cherkasy" = "Черкаси",
+                                        "Uzhhorod" = "Ужгород",
+                                        "Peremyshliany" = "Перемишляни",
+                                        "Khust" = "Хуст",
+                                        "Znamianka" = "Знам'янка",
+                                        "Lokhvytsia" = "Лохвиця",
+                                        "Olevsk" = "Олевськ",
+                                        "Kropyvnytskyi" = "Кропивницький",
+                                        "Zhovti Vody" = "Жовті Води",
+                                        "Kryvyi Rih" = "Кривий Ріг",
+                                        "Bila Tserkva" = "Біла Церква",
+                                        "Zolotonosha" = "Золотоноша",
+                                        "Zhashkiv" = "Жашків",
+                                        "Pryluky" = "Прилуки",
+                                        "Korostyshiv" = "Коростишів",
+                                        "Bakhmach" = "Бахмач",
+                                        "Bar" = "Бар",
+                                        "Dolyna" = "Долина",
+                                        "Zbarazh" = "Збараж",
+                                        "Horodok" = "Городок",
+                                        "Monastyryshche" = "Монастирище",
+                                        "Kozyatyn" = "Козятин",
+                                        "Pervomaisk" = "Первомайськ",
+                                        "Vatutine" = "Ватутіне",
+                                        "Morshyn" = "Моршин",
+                                        "Tyachiv" = "Тячів",
+                                        "Bilhorod-Dnistrovskyi" = "Білгород-Дністровський",
+                                        "Chernivtsi" = "Чернівці",
+                                        "Yampil" = "Ямпіль",
+                                        "Synelnykove" = "Синельникове",
+                                        "Zhytomyr" = "Житомир",
+                                        "Truskavets" = "Трускавець",
+                                        "Halych" = "Галич",
+                                        "Kalinivka" = "Калинівка",
+                                        "Zhmerynka" = "Жмеринка"),
+         region_moving_ua = as.character(as_factor(region_moving)),
+         region_moving_en = fct_recode(region_moving_ua,
+                                       "Kyiv City" = "Київ",
+                                       "South" = "Південний",
+                                       "Center" = "Центральний",
+                                       "West" = "Західний",
+                                       "North" = "Північний",
+                                       "East" = "Східний"),
+         educ_ua = as.character(as_factor(education)),
+         region_war = case_when(
+           oblast_before_en %in% c("Donetsk Region", "Zhytomyr Region", "Zaporizhzhia Region", "Kyiv City", "Kyiv Region", "Mykolaiv Region", "Sumy Region", "Kharkiv Region", "Kherson Region", "Chernihiv Region") ~ 1,
+           TRUE ~ 0)) %>%
+  select(-q2, 
+         -q3, 
+         -q4, 
+         -q5, 
+         -q6, 
+         -q7,
+         -q8, 
+         -q9, 
+         -q10, 
+         -q11, 
+         -q12,
+         -q13,
+         -q14,
+         -q15,
+         -q16,
+         -q16,
+         -q17,
+         -q18,
+         -q19,
+         -demo_oblast, 
+         -demo_age_int, 
+         -demo_gender, 
+         -demo_region, 
+         -demo_city, 
+         -demo_сity_size, 
+         -oblast_moving,
+         -oblast_moving_ua,
+         -region_moving,
+         -region_moving_ua,
+         -education, 
+         -region_before_ua, 
+         -gender_ua, 
+         -oblast_before_ua, 
+         -city_before_ua,
+         -city_size_before_ua,
+         -city_moving)
+
+dummies <- model.matrix(~ oblast_before_en - 1, data_clean) %>%
+  as.data.frame()
+
+# To join the dummy variables back to your original dataset:
+data_with_dummies <- bind_cols(data_clean, dummies)
+```
+
+
+```{r saving data}
 
 # Calculating temporal discounting score and anomalies
 
-# writexl::write_xlsx(data_copy, "survey.xlsx", col_names = TRUE)
+writexl::write_xlsx(dat_unique, "survey.xlsx", col_names = TRUE)
+writexl::write_xlsx(data_clean, "survey_1.xlsx", col_names = TRUE)
 ```
 
 ```{r}
@@ -621,191 +851,103 @@ dat_unique <- dat_items %>%
 ```
 
 
-```{r}
-get_scores <- function (x) {
-  
-  ## This function will compute the total temporal discount for each participant based on their responses to each block question
-  ##
-  ## Input (x): A block of questions (5 previous questions to the one parsed to the function)
-  ##
-  ## Output: Vector of individual sum responses per block
-  
-  f <- as.numeric(gsub("block", "", x$block))[1]
-  
-  if (f == 1) {
-    x %>% 
-      mutate(score = case_when(
-        amount_later == 750 & choice == 0 ~ 5,
-        amount_later == 750 & choice == 1 ~ 4,
-        amount_later == 600 & choice == 1 ~ 3,
-        amount_later == 510 & choice == 0 ~ 2,
-        amount_later == 505 & choice == 0 ~ 1,
-        amount_later == 505 & choice == 1 ~ 0
-      ))
-    
-  } else if (f == 2) {
-    x %>% 
-      mutate(score = case_when(
-        amount_later == 750 & choice == 1 ~ 0,
-        amount_later == 750 & choice == 0 ~ 1,
-        amount_later == 600 & choice == 0 ~ 2,
-        amount_later == 510 & choice == 1 ~ 3,
-        amount_later == 505 & choice == 0 ~ 5,
-        amount_later == 505 & choice == 1 ~ 4
-      ))
-  } else {
-    x %>% 
-      mutate(score = case_when(
-        amount_later == 7500 & choice == 0 ~ 5,
-        amount_later == 7500 & choice == 1 ~ 4,
-        amount_later == 6000 & choice == 1 ~ 3,
-        amount_later == 5100 & choice == 0 ~ 2,
-        amount_later == 5050 & choice == 0 ~ 1,
-        amount_later == 5050 & choice == 1 ~ 0
-      ))
-  }
-}
 
-
-
-get_latest_answer <- function (x, y){
-  
-  ## This function will obtain the latest answer given to the initial baseline questions. This function is necessary to control for the different possible options shown to each individual.
-  ##
-  ## Input: (x) A data frame including choices to questions; (y) a scalar identifying the next item following the item block. 
-  ##
-  ## Output: Vector of individual responses to the anomaly item
-  
-  x %>% 
-    group_by(ResponseId) %>% 
-    filter(as.numeric(gsub("Q", "", question)) < y) %>% 
-    arrange(desc(as.numeric(gsub("Q", "", question)))) %>% 
-    slice(1) %>% 
-    ungroup() %>% 
-    arrange(ResponseId) %>% 
-    dplyr:::select(ResponseId, choice, amount_later, block) 
-}
-
-get_second_choices <- function (x, y) {
-  
-  ## This function will obtain the answer given to the anomalies questions. This function necessary to control for the different possible options shown to each individual
-  ##
-  ## Input: (x) A data frame including choices to questions; (y) the anomaly item identifier. 
-  ##
-  ## Output: Vector of individual responses to the anomaly item
-  
-  x %>% 
-    arrange(ResponseId) %>%   
-    arrange(desc(as.numeric(gsub("Q", "", question)))) %>%   
-    filter(question == y) %>% 
-    dplyr:::select(choice) %>% 
-    unlist() %>% 
-    as.vector()
-}
-
-
-fixer_anom <- function (d, type = NULL){
-  
-  ## This function will compute whether an anomaly was observed (and whether the initial answer was a sooner or later decision) and if the possible anomaly was congruent with theory or not.
-  ##
-  ## Input: (x) A data frame including the first choice (fc) and the type of anomaly to be estimated. 
-  ##
-  ## Output: dataframe including the individual id and the variables response (possible anomaly and initial decision) and anomaly (whether an anomaly or a consistent decision was observed).
-  
-  if (type == "presbias" || type == "absolmag" || type == "delay") {  
-    
-    d %>%
-      mutate(response = case_when (
-        fc == 0 & sc == 0 ~ "No anomaly sooner",
-        fc == 1 & sc == 0 ~ "Anomaly later",
-        fc == 0 & sc == 1 ~ "Anomaly sooner",
-        fc == 1 & sc == 1 ~ "No anomaly later")) %>% 
-      mutate (response = as.factor(response)) %>% 
-      mutate(anomaly = case_when(
-        response == "Anomaly later" ~ "Possible anomaly",
-        response == "Anomaly sooner" ~ "Possible anomaly",
-        response == "No anomaly later" ~ "Consistent",
-        response == "No anomaly sooner" ~ "Consistent"
-      )) %>% 
-      mutate(anomaly = fct_relevel(anomaly, "Consistent", "Possible anomaly")) %>%
-      mutate(response = fct_recode(response, 
-                                   "Congruent" = "Anomaly sooner", 
-                                   "Not congruent" = "Anomaly later")) %>% 
-      mutate(type = rep(type, length(response))) %>% 
-      dplyr:::select(ResponseId, response, anomaly, type) 
-    
-  } else if (type == "gainloss") {  
-    
-    d %>%
-      mutate(response = case_when (
-        fc == 0 & sc == 0 ~ "Anomaly sooner",
-        fc == 1 & sc == 0 ~ "No anomaly later",
-        fc == 0 & sc == 1 ~ "No anomaly sooner",
-        fc == 1 & sc == 1 ~ "Anomaly later")) %>% 
-      mutate (response = as.factor(response)) %>% 
-      mutate(anomaly = case_when(
-        response == "Anomaly later" ~ "Possible anomaly",
-        response == "Anomaly sooner" ~ "Possible anomaly",
-        response == "No anomaly later" ~ "Consistent",
-        response == "No anomaly sooner" ~ "Consistent"
-      )) %>% 
-      mutate(anomaly = fct_relevel(anomaly, "Consistent", "Possible anomaly")) %>% 
-      mutate(response = fct_recode(response, 
-                                   "Congruent" = "Anomaly sooner", 
-                                   "Not congruent" = "Anomaly later")) %>%
-      mutate(type = rep(type, length(response))) %>% 
-      dplyr:::select(ResponseId, response, anomaly, type) 
-    
-  }
-} 
-```
 
 
 ## EDA
 
 
-```{r, warning=FALSE, message=FALSE, echo=FALSE}
-g2 <- ggplot(data_copy, aes(q21, fill = demo_gender)) +
+```{r income plots, warning=FALSE, message=FALSE, echo=FALSE}
+# Calculate the number of "Don't want" responses for each question
+dontwant_count_q21 <- sum(data_copy$q21 == 7)
+dontwant_count_q21_1 <- sum(data_copy$q21_1 == 7)
+
+# Filter out "Don't want" responses from data_copy for g2 plot
+data_copy_filtered_g2 <- data_copy[data_copy$q21 != 7,]
+
+# g2 Plot
+g2 <- ggplot(data_copy_filtered_g2, aes(q21, fill = demo_gender)) +
   geom_bar() +
   labs(title = "Individual income",
        x = "",
-       y = "") +
+       y = "Frequency of responses",) +
   geom_text(aes(label = ..count..), 
             stat = 'count', vjust = -0.5, 
             color = "black", size = 5, 
             family = "Garamond") +
   theme_classic() +
-  scale_x_continuous(breaks = c(1,2,3,4,5,6,7), 
+  theme(text = element_text(family = "Garamond", size = 12),
+        plot.title = element_text(hjust = 0.5),
+        axis.text.y = element_blank()) +
+  scale_x_continuous(breaks = c(1,2,3,4,5,6), 
                      labels = c("5-",
                                 "5-19",
                                 "20-39",
                                 "40-59",
                                 "60-79",
-                                "80+",
-                                "Don't want"))
+                                "80+"))
 
+# Filter out "Don't want" responses from data_copy for g1 plot
+data_copy_filtered_g1 <- data_copy[data_copy$q21_1 != 7,]
+
+# g2 Plot
+g2 <- ggplot(data_copy_filtered_g2, aes(q21, fill = demo_gender)) +
+  geom_bar() +
+  labs(title = "Individual income",
+       x = "",
+       y = "Frequency of responses",) +
+  geom_text(aes(label = ..count..), 
+            stat = 'count', vjust = -0.5, 
+            color = "black", size = 5, 
+            family = "Garamond") +
+  theme_classic() +
+  theme(text = element_text(family = "Garamond", size = 12),
+        plot.title = element_text(hjust = 0.5),
+        axis.line.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.text.y = element_blank()) +
+  scale_x_continuous(breaks = c(1,2,3,4,5,6), 
+                     labels = c("5-",
+                                "5-19",
+                                "20-39",
+                                "40-59",
+                                "60-79",
+                                "80+")) +
+  scale_y_continuous(limits = c(0, 510))
 
 # g1 Plot
-g1 <- ggplot(data_copy, aes(x = q21_1)) +
+g1 <- ggplot(data_copy_filtered_g1, aes(x = q21_1)) +
   geom_bar() +
   labs(title = "Household income",
        x = "",
-       y = "# of responders") +
+       y = "",
+       caption = "116 respondents chose not to disclose their individual income and 133 - household income. 
+       There were no cases of people reporting a lower household income and higher individual.") +
   geom_text(aes(label = ..count..), 
             stat = 'count', vjust = -0.5, 
             color = "black", size = 5, 
             family = "Garamond") +
   theme_classic() +
-  scale_x_continuous(breaks = c(1,2,3,4,5,6,7), 
+  theme(text = element_text(family = "Garamond", size = 12),
+        plot.caption = element_text(size = 11),
+        plot.title = element_text(hjust = 0.5),
+        axis.line.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.text.y = element_blank()) +
+  scale_x_continuous(breaks = c(1,2,3,4,5,6), 
                      labels = c("5-",
                                 "5-19",
                                 "20-39",
                                 "40-59",
                                 "60-79",
-                                "80+",
-                                "Don't want"))
+                                "80+")) +
+  scale_y_continuous(limits = c(0, 510))
 
+# Combine the plots
+(g2 + g1)
+```
 
+```{r}
 # sanity check
 check <- data_copy %>% 
   select(q21, q21_1, geosoc1) %>% 
@@ -823,6 +965,8 @@ g3 <- ggplot(check, aes(x = as.factor(breadwinner))) +
             color = "black", size = 5, 
             family = "Garamond") +
   theme_classic()
+
+g3
 
 g4 <- check %>% 
   filter(geosoc1 %in% c(1,3,5,6)) %>% 
@@ -954,39 +1098,438 @@ ggplot(data_copy, aes(x = oblast_moving)) +
 
 
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
-# g4 <- ggplot(data_clean, aes(x = Forced_relocation, fill = region_before)) +
-#   geom_bar() +
-#   labs(title = "Forced relocation", caption = "before the war") +
-#   theme_bw() +
-#   theme(legend.position = "none", legend.title = element_blank())
-#   
-# 
-# g5 <- ggplot(data_clean, aes(x = Forced_relocation, fill = region_now)) +
-#   geom_bar() +
-#   labs(title = "Forced relocation", caption = "now") +
-#   theme_bw()
-# 
-# gridExtra::grid.arrange(g4,g5, ncol = 2)
+plot_war <- dat_unique[,c(23:31,33:36)]
+
+library(PerformanceAnalytics)
+chart.Correlation(plot_war, histogram=F)
+
+library(corrr)
+library(corrplot)
+
+
+# Compute the correlation matrix and the p-value matrix
+correlation.matrix<-cor(plot_war) 
+p.mat <- corrplot::cor.mtest(plot_war, conf.level = 0.95)$p
+
+rownames(correlation.matrix) <- c("Evacuation", 
+                               "Occupation", 
+                               "Bombing",
+                               "Property", 
+                               "Physical", 
+                               "Emotional", 
+                               "Robbery", 
+                               "AFU", 
+                               "Decease",
+                               "Injury", 
+                               "Depression", 
+                               "Insecurity",
+                               "Insomnia")
+colnames(correlation.matrix) <- c("Evacuation", 
+                               "Occupation", 
+                               "Bombing",
+                               "Property", 
+                               "Physical", 
+                               "Emotional", 
+                               "Robbery", 
+                               "AFU", 
+                               "Decease",
+                               "Injury", 
+                               "Depression", 
+                               "Insecurity",
+                               "Insomnia")
+
+corrplot(correlation.matrix, method="circle", type="upper", 
+         tl.col="black", tl.srt=45, tl.cex=0.7,
+         order="hclust", 
+         addgrid.col = NA, 
+         title="Correlation Matrix", mar=c(0,0,1,0),
+         diag=FALSE,
+         cl.cex=0.7,
+         tl.pos="lt",
+         col=colorRampPalette(c("#BB4444", "#EE9988", "#FFFFFF", "#77AADD", "#4477AA"))(200),
+         p.mat = p.mat, # Add the matrix of p-values
+         sig.level = 0.05, # Specify the significance level
+         insig = "pch",    # Use symbols for significance
+         pch.cex = 1.5,    # Size of the symbols
+         pch.col = "red",  # Color of the symbols
+         signif.legend=TRUE, # Show legend for significance
+         legend.pos="bottom", # Position of the legend
+         addCoef.col = "black" # Color of the correlation coefficients
+         )
+
+
+
+
+stargazer(correlation.matrix,title="Correlation Matrix", 
+          type = "text",
+          dep.var.labels = c("Evacuation", 
+                               "Occupation", 
+                               "Bombing",
+                               "Property", 
+                               "Physical", 
+                               "Emotional", 
+                               "Robbery", 
+                               "AFU", 
+                               "Decease",
+                               "Injury", 
+                               "Depression", 
+                               "Insecurity",
+                               "Insomnia"))
+
 ```
+
+```{r}
+plot_discount <- dat_unique[,c(14, 18, 23:37,46, 63)]
+ggplot(plot_discount, aes(x = score)) +
+  geom_histogram(bins = 18) +
+  theme_classic() +
+  facet_wrap(~q28_5)
+
+```
+
 
 ## Analysis
 
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
-# colnames(data_full_cat)
-data_full_cat <- na.omit(data_full_cat)
-mod <- lm(score ~ ., data = data_full_cat)
-stargazer(mod, type = "text")
+data_war <- dat_unique[,c(23:37,46, 63)]
+
+mod <- lm(score ~ . - 1, data = data_war)
+mod_pres <- glm(presbias ~ . - 1, data = dat_unique[,c(23:37, 64)], family = binomial("logit"))
+mod_absol <- glm(absolmag ~ . - 1, data = dat_unique[,c(23:37, 65)], family = binomial("logit"))
+mod_gainloss <- glm(gainloss ~ . - 1, data = dat_unique[,c(23:37, 66)], family = binomial("logit"))
+mod_delay <- glm(delayspeed ~ . - 1, data = dat_unique[,c(23:37, 67)], family = binomial("logit"))
+
+stargazer(mod, mod_pres, mod_absol, mod_gainloss, mod_delay,
+          covariate.labels = c("Evacuation", 
+                               "Occupation", 
+                               "Bombing",
+                               "Property damage", 
+                               "Physical violence", 
+                               "Emotional violence", 
+                               "Robbery / Fraud", 
+                               "Relative in AFU", 
+                               "Loss of a relative", 
+                               "Doesn't want to answer",
+                               "Physical injury", 
+                               "Depression", 
+                               "Confidence loss",
+                               "Problems with sleep",
+                               "None of the above", 
+                               "Don't want to answer"),
+          header=FALSE, 
+          title="Regression results", 
+          type='text', 
+          digits=3,
+          style = "aer",
+          font.size = "small",
+          align = TRUE,
+          omit = c("Constant"),
+          omit.stat=c("f", "ser"),
+          no.space=TRUE)
+
+mod_war_interact <- lm(score ~ q27_1*q28_1+q27_1*q28_2+q27_1*q28_3+q27_1*q28_4+q27_1*q28_5-1, data = data_war)
+
+stargazer(mod_war_interact, 
+          header=FALSE,
+          type='text', 
+          digits=3,
+          font.size = "normalsize",
+          align = TRUE,
+          omit.stat=c("f", "ser"),
+          column.sep.width = "-25pt")
+
+
 ```
 
-Відфільтрував датасет (no NAs) по зарплаті 20+ та 20-.
-No significance, окрім Fin_wellbeing_worse (\<0.1) - це dummy (1 - фінансове положення з початку війни погіршилось)
+```{r}
+library(gt)
+
+table_temp <- data_copy[,c(2:19, 40:49, 63)] %>%
+  pivot_longer(cols = q2:q18, names_to = "Question", values_to = "Response") %>% 
+  group_by(Question, demo_gender, Response) %>%
+  summarise(Count = n()) %>%
+  pivot_wider(names_from = demo_gender, values_from = Count, names_prefix = "Num_") %>%
+  mutate(Question = factor(Question, levels = unique(Question))) %>%
+  arrange(Question, Response)
+
+table_temp %>% 
+  gt(groupname_col = 'Question') %>% 
+  cols_label(
+    Num_1 = "Female",
+    Num_2 = "Male") %>%
+  
+  tab_spanner(
+    label = md("**Gender**"),
+    columns = c('Num_1','Num_2')) %>%
+  
+  tab_header(
+    title = 'Table N. Summary Statistics of Temporal Discounting Questions') 
+```
+
+
+
+# Mediation Analysis
+
+```{r}
+require(mediation) #Mediation package
+require(rockchalk) #Graphing simple slopes; moderation
+require(multilevel) #Sobel Test
+require(bda) #Another Sobel Test option
+require(gvlma) #Testing Model Assumptions 
+require(QuantPsyc)
+require(pequod)
+```
+
+
+```{r LR test for ordinal variables}
+#treating ordinal data as continuous
+data_ordinal <- dat_unique[, c(14:18,20:31,33:37,41,43,46,47,50,63:67)] %>% 
+  mutate(inc_5 = ifelse(q21 == 1, 1, 0),
+         inc_20 = ifelse(q21 == 2, 1, 0),
+         inc_40 = ifelse(q21 == 3, 1, 0),
+         inc_60 = ifelse(q21 == 4, 1, 0),
+         inc_80 = ifelse(q21 == 5, 1, 0),
+         inc_100 = ifelse(q21 == 6, 1, 0)) %>%
+  mutate(finc_5 = ifelse(q21_1 == 1, 1, 0),
+         finc_20 = ifelse(q21_1 == 2, 1, 0),
+         finc_40 = ifelse(q21_1 == 3, 1, 0),
+         finc_60 = ifelse(q21_1 == 4, 1, 0),
+         finc_80 = ifelse(q21_1 == 5, 1, 0),
+         finc_100 = ifelse(q21_1 == 6, 1, 0)) %>% 
+  mutate(expect_much_better = ifelse(q22 == 1, 1, 0),
+         expect_better = ifelse(q22 == 2, 1, 0),
+         expect_same = ifelse(q22 == 3, 1, 0),
+         expect_worse = ifelse(q22 == 4, 1, 0),
+         expect_much_worse = ifelse(q22 == 5, 1, 0)) %>% 
+  mutate(change_much_better = ifelse(q23 == 1, 1, 0),
+         change_better = ifelse(q23 == 2, 1, 0),
+         change_same = ifelse(q23 == 3, 1, 0),
+         change_worse = ifelse(q23 == 4, 1, 0),
+         change_much_worse = ifelse(q23 == 5, 1, 0)) %>% 
+  mutate(calm_always = ifelse(q26_1 == 1, 1, 0),
+         calm_more = ifelse(q26_1 == 2, 1, 0),
+         calm_freq = ifelse(q26_1 == 3, 1, 0),
+         calm_often = ifelse(q26_1 == 4, 1, 0),
+         calm_less = ifelse(q26_1 == 5, 1, 0),
+         calm_never = ifelse(q26_1 == 6, 1, 0)) %>% 
+  mutate(energy_always = ifelse(q26_2 == 1, 1, 0),
+         energy_more = ifelse(q26_2 == 2, 1, 0),
+         energy_freq = ifelse(q26_2 == 3, 1, 0),
+         energy_often = ifelse(q26_2 == 4, 1, 0),
+         energy_less = ifelse(q26_2 == 5, 1, 0),
+         energy_never = ifelse(q26_2 == 6, 1, 0)) %>% 
+  mutate(sad_always = ifelse(q26_3 == 1, 1, 0),
+         sad_more = ifelse(q26_3 == 2, 1, 0),
+         sad_freq = ifelse(q26_3 == 3, 1, 0),
+         sad_often = ifelse(q26_3 == 4, 1, 0),
+         sad_less = ifelse(q26_3 == 5, 1, 0),
+         sad_never = ifelse(q26_3 == 6, 1, 0))
+
+mod_ord_test1 <- lm(score ~ q21, data = data_ordinal)
+mod_ord_test2 <- lm(score ~ inc_5 + inc_20 + inc_40 + inc_60 + inc_80 + inc_100, data = data_ordinal)
+mod_ord_test3 <- lm(score ~ q21+ inc_5 + inc_20 + inc_40 + inc_60 + inc_80 + inc_100, data = data_ordinal)
+
+(A <- logLik(mod_ord_test1))
+(B <- logLik(mod_ord_test2))
+(teststat <- -2 * (as.numeric(A)-as.numeric(B)))
+(p.val <- pchisq(teststat, df = 4, lower.tail = FALSE))
+
+
+#######################################3
+mod_ord_test1 <- lm(score ~ q21_1, data = data_ordinal)
+mod_ord_test2 <- lm(score ~ finc_5 + finc_20 + finc_40 + finc_60 + finc_80 + finc_100, data = data_ordinal)
+mod_ord_test3 <- lm(score ~ q21_1 + finc_5 + finc_20 + finc_40 + finc_60 + finc_80 + finc_100, data = data_ordinal)
+
+(A <- logLik(mod_ord_test1))
+(B <- logLik(mod_ord_test2))
+(teststat <- -2 * (as.numeric(A)-as.numeric(B)))
+(p.val <- pchisq(teststat, df = 5, lower.tail = FALSE))
+# only here more complex model is preferred - use dummies(!)
+#############################################
+
+
+mod_ord_test1 <- lm(score ~ q22, data = data_ordinal)
+mod_ord_test2 <- lm(score ~ expect_much_better + expect_better + expect_same + expect_worse + expect_much_worse, data = data_ordinal)
+mod_ord_test3 <- lm(score ~ q22 + expect_much_better + expect_better + expect_same + expect_worse + expect_much_worse, data = data_ordinal)
+
+(A <- logLik(mod_ord_test1))
+(B <- logLik(mod_ord_test2))
+(teststat <- -2 * (as.numeric(A)-as.numeric(B)))
+#df = 4 - 3 = 1
+(p.val <- pchisq(teststat, df = 3, lower.tail = FALSE))
+
+
+mod_ord_test1 <- lm(score ~ q23, data = data_ordinal)
+mod_ord_test2 <- lm(score ~ change_much_better + change_better + change_same + change_worse + change_much_worse, data = data_ordinal)
+mod_ord_test3 <- lm(score ~ q23 + change_much_better + change_better + change_same + change_worse + change_much_worse, data = data_ordinal)
+
+
+(A <- logLik(mod_ord_test1))
+(B <- logLik(mod_ord_test2))
+(teststat <- -2 * (as.numeric(A)-as.numeric(B)))
+(p.val <- pchisq(teststat, df = 3, lower.tail = FALSE))
+# we obseve decreasing scores as fwb changes for worse
+
+mod_ord_test1 <- lm(score ~ q26_1, data = data_ordinal)
+mod_ord_test2 <- lm(score ~ calm_always + calm_more + calm_freq + calm_often + calm_less + calm_never, data = data_ordinal)
+mod_ord_test3 <- lm(score ~ q26_1 + calm_always + calm_more + calm_freq + calm_often + calm_less + calm_never, data = data_ordinal)
+
+(A <- logLik(mod_ord_test1))
+(B <- logLik(mod_ord_test2))
+(teststat <- -2 * (as.numeric(A)-as.numeric(B)))
+(p.val <- pchisq(teststat, df = 4, lower.tail = FALSE))
+
+
+
+mod_ord_test1 <- lm(score ~ q26_2, data = data_ordinal)
+mod_ord_test2 <- lm(score ~ energy_always + energy_more + energy_freq + energy_often + energy_less + energy_never, data = data_ordinal)
+mod_ord_test3 <- lm(score ~ q26_2 + energy_always + energy_more + energy_freq + energy_often + energy_less + energy_never, data = data_ordinal)
+
+
+(A <- logLik(mod_ord_test1))
+(B <- logLik(mod_ord_test2))
+(teststat <- -2 * (as.numeric(A)-as.numeric(B)))
+(p.val <- pchisq(teststat, df = 4, lower.tail = FALSE))
+
+
+mod_ord_test1 <- lm(score ~ q26_3, data = data_ordinal)
+mod_ord_test2 <- lm(score ~ sad_always + sad_more + sad_freq + sad_often + sad_less + sad_never, data = data_ordinal)
+mod_ord_test3 <- lm(score ~ q26_3 + sad_always + sad_more + sad_freq + sad_often + sad_less + sad_never, data = data_ordinal)
+
+(A <- logLik(mod_ord_test1))
+(B <- logLik(mod_ord_test2))
+(teststat <- -2 * (as.numeric(A)-as.numeric(B)))
+(p.val <- pchisq(teststat, df = 4, lower.tail = FALSE))
+```
+
+
 
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
-data_war <- data_copy %>% 
-  select(q26_1, q26_2, q26_3, q27_1, q27_2, q27_3, q27_4, q27_5, q27_6, q27_7, q27_8, q27_9, q27_10, q28_1, q28_2, q28_3, q28_4, q28_5, q28_6, demo_age)
+data_mediation <- dat_unique[, c(14:18,20:31,33:37,41,43,46,47,50,63:67)]
+colnames(data_mediation) <- c("inc_indiv",
+                              "inc_house",
+                              "fwb_expect",
+                              "fwb_war",
+                              "fwb_debts",
+                              "mh_calm",
+                              "mh_energy",
+                              "mh_sad",
+                              "evacuate", 
+                              "occupation", 
+                              "bombing",
+                              "prop_dmg", 
+                              "phys_viol", 
+                              "emo_viol", 
+                              "robbery", 
+                              "fam_afu", 
+                              "fam_death", 
+                              "phys_injury", 
+                              "depression", 
+                              "confid_loss",
+                              "insom",
+                              "no_effect", 
+                              "family_stat",
+                              "child_live",
+                              "gender",
+                              "age",
+                              "oblast",
+                              "score",
+                              "presbias",
+                              "absolmag",
+                              "gainloss",
+                              "delayspeed")
 
-mod_war <- lm(demo_age ~ ., data_war)
-stargazer(mod_war, 
+#Which aspect of war is highly associated with TD?
+mod_association_score <- lm(score ~ evacuate + occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + no_effect - 1, data = data_mediation)
+
+mod_association_pres <- glm(presbias ~ evacuate + occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + no_effect - 1, data = data_mediation, family = binomial("logit"))
+hist(data_mediation$score)
+
+mod_association_absol <- glm(absolmag ~ evacuate + occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + no_effect - 1, data = data_mediation, family = binomial("logit"))
+
+mod_association_gain <- glm(gainloss ~ evacuate + occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + no_effect - 1, data = data_mediation, family = binomial("logit"))
+
+mod_association_delay <- glm(delayspeed ~ evacuate + occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + no_effect - 1, data = data_mediation, family = binomial("logit"))
+
+stargazer(mod_association_score,
+          header=FALSE,
+          type='text', 
+          digits=3,
+          font.size = "normalsize",
+          align = TRUE,
+          omit.stat=c("f", "ser"),
+          column.sep.width = "-25pt")
+
+# Low R^2 and majority are insignificant
+
+
+#WAR-MH-TD
+
+#STEP 1
+#1. Direct Effect (War on TD)
+mod_war_td <- lm(score ~ evacuate - 1, data = data_mediation)
+
+#2.1 Path A (War on MH)
+mod_war_mh <- lm(mh_sad ~ evacuate - 1, data = data_mediation)
+
+#3.1 Path B (MH on TD, controlling for War)
+mod_mh_td <- lm(score ~ mh_sad - 1, data = data_mediation)
+
+#4.1 Total
+mod_total_mh <- lm(score ~ mh_sad + evacuate - 1, data = data_mediation)
+
+stargazer(mod_war_td, mod_war_mh, mod_mh_td,mod_total_mh,
+          header=FALSE,
+          type='text', 
+          digits=3,
+          font.size = "normalsize",
+          align = TRUE,
+          omit.stat=c("f", "ser"),
+          column.sep.width = "-25pt")
+
+#1.1 Direct
+mod_war_td <- lm(score ~ evacuate - 1, data = data_mediation)
+
+#2.2 Path C (War on FWB)
+mod_war_fwb <- lm(fwb_war ~ evacuate - 1, data = data_mediation)
+
+#3.2 Path D (FWB on TD, controlling for War)
+mod_fwb_td <- lm(score ~ fwb_war + evacuate - 1, data = data_mediation)
+
+#4.1 Total 
+mod_total_fwb <- lm(score ~ fwb_war + evacuate - 1, data = data_mediation)
+
+stargazer(mod_war_td, mod_war_fwb, mod_fwb_td,mod_total_fwb,
+          header=FALSE,
+          type='text', 
+          digits=3,
+          font.size = "normalsize",
+          align = TRUE,
+          omit.stat=c("f", "ser"),
+          column.sep.width = "-25pt")
+
+
+#Path A
+sobel(data_mediation$War, data_mediation$MH, data_mediation$score)
+
+#Path B
+sobel(data_mediation$War, data_mediation$FWB, data_mediation$score)
+```
+
+
+```{r}
+mod_finance_score <- lm(score ~ inc_indiv + inc_house + fwb_expect + fwb_war + fwb_debts - 1, data_mediation)
+mod_finance_pres <- glm(presbias ~ inc_indiv + inc_house + fwb_expect + fwb_war + fwb_debts - 1, data_mediation, family = binomial("logit"))
+mod_finance_absol <- glm(absolmag ~ inc_indiv + inc_house + fwb_expect + fwb_war + fwb_debts - 1, data_mediation, family = binomial("logit"))
+mod_finance_gainloss <- glm(gainloss ~ inc_indiv + inc_house + fwb_expect + fwb_war + fwb_debts - 1, data_mediation, family = binomial("logit"))
+mod_finance_delay <- glm(delayspeed ~ inc_indiv + inc_house + fwb_expect + fwb_war + fwb_debts - 1, data_mediation, family = binomial("logit"))
+
+
+stargazer(mod_finance_score, 
+          mod_finance_pres, 
+          mod_finance_absol, 
+          #mod_finance_gainloss,  
+          #mod_finance_delay, 
           header=FALSE,
           type='text', 
           digits=3,
@@ -996,9 +1539,50 @@ stargazer(mod_war,
           column.sep.width = "-25pt")
 ```
 
-Відфільтрував датасет (no NAs) по працюючим/непрацюючим.
-Непрацюючих тільки 16... краще дивіться на працюючих.
-Є вже вплив Debts (\<0.05) \<- good
+
+```{r}
+mod_mh_score <- lm(score ~ mh_calm + mh_energy + mh_sad + depression + confid_loss - 1, data_mediation)
+mod_mh_pres <- glm(presbias ~ mh_calm + mh_energy + mh_sad + depression + confid_loss - 1, data_mediation, family = binomial("logit"))
+mod_mh_absol <- glm(absolmag ~ mh_calm + mh_energy + mh_sad + depression + confid_loss - 1, data_mediation, family = binomial("logit"))
+mod_mh_gainloss <- glm(gainloss ~ mh_calm + mh_energy + mh_sad + depression + confid_loss - 1, data_mediation, family = binomial("logit"))
+mod_mh_delay <- glm(delayspeed ~ mh_calm + mh_energy + mh_sad + depression + confid_loss - 1, data_mediation, family = binomial("logit"))
+
+
+stargazer(mod_mh_score, 
+          mod_mh_pres, 
+          mod_mh_absol, 
+          #mod_mh_gainloss,  
+          #mod_mh_delay, 
+          header=FALSE,
+          type='text', 
+          digits=3,
+          font.size = "normalsize",
+          align = TRUE,
+          omit.stat=c("f", "ser"),
+          column.sep.width = "-25pt")
+```
+
+
+```{r}
+library(UpSetR)
+data_venn <- data_mediation[,c(9:22)]
+data_venn <- as.data.frame(data_venn)
+upset(data_venn, order.by = "freq", sets = c("evacuate", 
+                          "occupation", 
+                          "bombing",
+                          "prop_dmg", 
+                          "phys_viol", 
+                          "emo_viol", 
+                          "robbery", 
+                          "fam_afu", 
+                          "fam_death", 
+                          "phys_injury", 
+                          "depression", 
+                          "confid_loss",
+                          "insom",
+                          "no_effect"))
+```
+
 
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
 data_emp <- data_full_cat %>% 
@@ -1148,50 +1732,271 @@ stargazer(mod, mod_t,
           no.space=TRUE)
 ```
 
-```{r, warning=FALSE, message=FALSE, echo=FALSE}
-data_prospect <- data[, c(1:10)] %>% 
+```{r}
+graph_anomalies_indiv <- function (dat_grap){
+  des4 <- merge(dat_item, dat_grap, by= "ResponseId") %>% 
+    group_by(Residence) %>% 
+    count(anomaly) %>% 
+    mutate(suma = sum(n), prop = n/suma) %>% 
+    ggplot(aes(y = prop,
+               x = anomaly,
+               group = factor(anomaly),
+               colour = factor(anomaly))) +
+    geom_jitter(alpha = 0.9,
+                size = 7,
+                pch=19) +
+    stat_summary(fun.data = mean_cl_normal, 
+                 geom = "pointrange",
+                 size = 1, color = "black") +
+    theme_bw(base_size = 10) +
+    theme(legend.position = "none")+
+    ylab("Proportion of decisions") +
+    xlab("Type of decision") +
+    scale_colour_manual(values=palette_Dark2(length(table(dat_grap$anomaly))),
+                        name = "Type of anomaly") +
+    ylim(0,1)
   
-  mutate(gain = case_when(
-    str_detect(Q1, "Отримати 1600 грн прямо зараз") ~ 1600,
-    str_detect(Q1, "Отримати 2080 грн за 3 місяці") ~ 2080)) %>% 
   
-  mutate(gain_now_1 = case_when(
-    str_detect(Q1_now_1, "Отримати 1600 грн прямо зараз") ~ 1600,
-    str_detect(Q1_now_1, "Отримати 2160 грн за 3 місяці") ~ 2160)) %>% 
-      
-  mutate(gain_now_2 = case_when(
-    str_detect(Q1_now_2, "Отримати 1600 грн прямо зараз") ~ 1600,
-    str_detect(Q1_now_2, "Отримати 2240 грн за 3 місяці") ~ 2240)) %>% 
+  des5 <- merge(dat_item, dat_grap, by= "ResponseId") %>%
+    filter(str_detect(response, 'ongruent')) %>%
+    group_by(Residence) %>% 
+    count(response) %>% 
+    mutate(suma = sum(n), prop = n/suma) %>% 
+    ggplot(aes(y = prop,
+               x = response,
+               group = factor(response),
+               colour = factor(response))) +
+    geom_jitter(alpha = 0.9,
+                size = 7,
+                pch = 19) +
+    ylim(0,1)+
+    stat_summary(fun.data = mean_cl_normal, 
+                 geom = "pointrange",
+                 size = 1, 
+                 color = "black") +
+    theme_bw(base_size = 10) +
+    theme(legend.position = "none")+
+    ylab("Proportion of total anomalies") +
+    xlab("Type of anomaly") +
+    #ylim(0,800)+
+    scale_colour_manual(values=palette_Dark2(length(table(dat_grap$anomaly))),
+                        name = "Type of anomaly")
   
-  mutate(gain_later_1 = case_when(
-    str_detect(Q1_wait_1, "Отримати 1600 грн прямо зараз") ~ 1600,
-    str_detect(Q1_wait_1, "Отримати 2000 грн за 3 місяці") ~ 2000)) %>%
+  layout <- c(
+    area(t = 1, l = 1, b = 6, r = 3),
+    area(t = 1, l = 5, b = 8, r = 8))
   
-  mutate(gain_later_2 = case_when(
-    str_detect(Q1_wait_2, "Отримати 1600 грн прямо зараз") ~ 1600,
-    str_detect(Q1_wait_2, "Отримати 1920 грн за 3 місяці") ~ 1920)) %>%
+  des6 <- des4 + des5 + 
+    plot_layout(design = layout)
   
-  mutate(pay = case_when(
-    str_detect(Q2, "Заплатити 1600 грн прямо зараз") ~ -1600,
-    str_detect(Q2, "Заплатити 2080 грн за 3 місяці") ~ -2080)) %>%
+  return (des6)
   
-  mutate(pay_later_1 = case_when(
-    str_detect(Q2_wait_1, "Заплатити 1600 грн прямо зараз") ~ -1600,
-    str_detect(Q2_wait_1, "Заплатити 2240 грн за 3 місяці") ~ -2240)) %>%
-  
-  mutate(pay_later_2 = case_when(
-    str_detect(Q2_wait_2, "Заплатити 1600 грн прямо зараз") ~ -1600,
-    str_detect(Q2_wait_2, "Заплатити 2160 грн за 3 місяці") ~ -2160)) %>%
-  
-  mutate(pay_now_1 = case_when(
-    str_detect(Q2_now_1, "Заплатити 1600 грн прямо зараз") ~ -1600,
-    str_detect(Q2_now_1, "Заплатити 2000 грн за 3 місяці") ~ -2000)) %>%
-  
-  mutate(pay_now_2 = case_when(
-    str_detect(Q2_now_2, "Заплатити 1600 грн прямо зараз") ~ -1600,
-    str_detect(Q2_now_2, "Заплатити 1920 грн за 3 місяці") ~ -1920))
+}
 
-# data_prospect <- data_prospect[, c(11:20)] %>% t()
-# data_prospect <- as.data.frame(data_prospect)
+
+graph_map <- function (data = NULL, var = "var", lowmin = NULL, upplim = NULL, pal = NULL, col = NULL, title = NULL) {
+  mp1 <- ggplot(data) +
+    geom_sf(aes_string(fill = var)) +
+    coord_sf(datum = NA) +
+    
+    scale_fill_continuous(low="#ba0404", 
+                          high="#080887", 
+                          limits=c(lowmin,upplim), na.value = "white") +
+    #scale_fill_material(col, na.value = "white")+
+    bbc_theme() +
+    theme(legend.position="bottom",
+          legend.text = element_text(size = 15))+
+     ggtitle(paste0(title)) + 
+    guides(colour = guide_legend(override.aes = list(size = 5))) +  
+    theme(legend.key.size = unit(1.5, "cm"))
+    
+  return(mp1)
+}
+```
+
+
+```{r}
+library(dplyr)
+library(tidyverse)
+library(readr)
+library(haven)
+library(autostsm)
+require(data.table)
+library(readxl)
+library(lubridate)
+
+library(shiny)
+library(leaflet)
+library(rgdal)
+library(ggplot2)
+library(jsonlite)
+library(stringr)   
+library(sp)
+library(RColorBrewer)
 
 ```
+
+## Ukraine regional map
+
+### Consumer index
+
+```{r}
+#load the original file
+cons <- read_csv("gtrendsdata.csv")
+
+# consumer index
+consumer_index <- cons %>%
+  group_by(geo, date) %>%
+  summarise(consumer_index = sum(hits)) %>%
+  ungroup()
+region_names <- data.frame(
+  geo = c("UA-71", 
+          "UA-74", 
+          "UA-77", 
+          "UA-12", 
+          "UA-14", 
+          "UA-26", 
+          "UA-63",
+          "UA-65",
+          "UA-68",
+          "UA-32", 
+          "UA-35", 
+          "UA-09",
+          "UA-46",
+          "UA-48",
+          "UA-51",
+          "UA-53",
+          "UA-56",
+          "UA-59",
+          "UA-61",
+          "UA-05",
+          "UA-07",
+          "UA-21",
+          "UA-23",
+          "UA-18",
+          "UA-30",
+          "UA-40",
+          "UA-43"),
+  region = c("Cherkasy", 
+             "Chernihiv", 
+             "Chernivtsi", 
+             "Dnipropetrovsk", 
+             "Donetsk", 
+             "Ivano-Frankivsk", 
+             "Kharkiv", 
+             "Kherson", 
+             "Khmelnytskyi", 
+             "Kiev", 
+             "Kirovohrad", 
+             "Luhansk", 
+             "Lviv", 
+             "Mykolaiv", 
+             "Odessa", 
+             "Poltava", 
+             "Rivne", 
+             "Sumy", 
+             "Ternopil", 
+             "Vinnytsia", 
+             "Volyn", 
+             "Zakarpattia",
+             "Zaporizhia",
+             "Zhytomyr", 
+             "Kyiv City", 
+             "Sevastopol' city", 
+             "Crimea")
+)
+consumer_index <- consumer_index %>%
+  left_join(region_names, by = "geo") %>%
+  select(-geo)
+
+consumer_index$date <- as.Date(consumer_index$date, format = "%Y-%m-%d") 
+
+consumer_index_wider <- consumer_index %>% 
+  pivot_wider(names_from = "region", values_from = c("consumer_index"))
+
+rownames(consumer_index_wider) <- consumer_index_wider$date
+row_names <- rownames(consumer_index_wider)
+consumer_index_wider$date <- NULL
+
+# transpose the dataframe
+consumer_index_wider_trans <- t(consumer_index_wider)
+
+consumer_index_clean <- as.data.frame(consumer_index_wider_trans)
+colnames(consumer_index_clean) <- row_names
+consumer_index_clean <- consumer_index_clean %>% rownames_to_column("id")
+
+consumer_index_clean <- consumer_index_clean %>%
+  mutate(id = ifelse(id == "Zaporizhia", "Zaporizhzhia", ifelse(
+    id == "Kiev", "Kyiv", id))) %>% 
+  rename(oblast = id)
+
+map <- readOGR("~data/stanford-ukraine.json")
+
+df <- fortify(map)
+#  
+# # Convert numeric strings to text
+df <- df %>%
+    mutate(id = as.character(id),
+      id = case_when(
+      id == 0 ~ "Cherkasy",
+      id == 1 ~ "Chernihiv",
+    id == 2 ~ "Chernivtsi",
+      id == 3 ~ "Crimea",
+      id == 4 ~ "Dnipropetrovsk",
+      id == 5 ~ "Donetsk",
+      id == 6 ~ "Kharkiv",
+      id == 7 ~ "Kherson",
+      id == 8 ~ "Khmelnytskyi",
+      id == 9 ~ "Kyiv City",
+      id == 10 ~ "Kyiv",
+      id == 11 ~ "Kirovohrad",
+      id == 12 ~ "Lviv",
+      id == 13 ~ "Luhansk",
+    id == 14 ~ "Mykolaiv",
+      id == 15 ~ "Odessa",
+      id == 16 ~ "Poltava",
+    id == 17 ~ "Rivne",
+      id == 18 ~ "Sevastopol' City",
+      id == 19 ~ "Sumy",
+      id == 20 ~ "Ivano-Frankivsk",
+    id == 21 ~ "Ternopil",
+    id == 22 ~ "Zakarpattia",
+      id == 23 ~ "Vinnytsia",
+      id == 24 ~ "Volyn",
+      id == 25 ~ "Zaporizhzhia",
+      id == 26 ~ "Zhytomyr",
+      TRUE ~ "Unknown"
+    )
+)
+
+df <- df %>% 
+    rename(oblast = id)
+
+merged <- left_join(df, consumer_index_clean, by = "oblast")
+new_attributes <- merged[,-c(1:5,7)] %>% 
+  distinct()
+
+# Function to rename columns using gsub()
+rename_columns <- function(df, pattern, replacement) {
+  colnames(df) <- gsub(pattern, replacement, colnames(df))
+  return(df)
+}
+
+# Rename the columns using gsub()
+new_attributes <- rename_columns(new_attributes, "\\-", "_")
+```
+
+```{r}
+# will have to add consumer index for all 27 regions and add it to geojson
+
+
+map <- readOGR("~data/stanford-ukraine.json")
+
+map@data[["name_1"]] <- unique(new_attributes$oblast)
+map@data <- left_join(map@data, new_attributes, by = c("name_1" = "oblast"))
+
+
+#map@data <- cbind(map@data, newer_attributes)
+```
+
+
