@@ -25,9 +25,6 @@ library(ggplot2)
 library(ggrepel)
 library(here)
 library(flextable)
-library(devtools)
-library(GPArotation)
-library(ufs)
 library(remotes)
 library(ggplot2)
 library(patchwork)
@@ -36,12 +33,8 @@ library(ggExtra)
 library(ggthemes)
 library(gtsummary)
 library(hrbrthemes)
-library(scales)
 library(stargazer)
 library(fastDummies)
-library(huxtable)
-library(jtools)
-library(AER)
 library(haven)
 
 ```
@@ -78,7 +71,7 @@ change_values <- function(x) {
   return(x)
 }
 
-data_copy[, c(2:18)] <- lapply(data_copy[, c(2:18)], change_values)
+data_copy[, c(2:18, 35)] <- lapply(data_copy[, c(2:18, 35)], change_values)
 ```
 
 ```{r functions}
@@ -458,6 +451,52 @@ dat_unique <- dat_items %>%
 ```
 
 ```{r data prep}
+convert_labelled_to_numeric <- function(variable) {
+  if (inherits(variable, "haven_labelled")) {
+    return(as.numeric(as.character(variable)))
+  } else {
+    return(variable)
+  }
+}
+
+
+ c("inc_indiv",
+                              "inc_house",
+                              "fwb_expect",
+                              "fwb_war",
+                              "fwb_debts",
+                              "mh_calm",
+                              "mh_energy",
+                              "mh_sad",
+                              "evacuate", 
+                              "occupation", 
+                              "bombing",
+                              "prop_dmg", 
+                              "phys_viol", 
+                              "emo_viol", 
+                              "robbery", 
+                              "fam_afu", 
+                              "fam_death", 
+                              "phys_injury", 
+                              "depression", 
+                              "confid_loss",
+                              "insom",
+                              "no_effect", 
+                              "family_stat",
+                              "child_live",
+                              "gender",
+                              "age",
+                              "oblast",
+                              "score",
+                              "presbias",
+                              "absolmag",
+                              "gainloss",
+                              "delayspeed")
+
+data_mediation <- data_mediation %>%  
+  mutate(across(everything(), convert_labelled_to_numeric)) %>% 
+  mutate(score.c = c(scale(score))) 
+
 data_clean <- data_copy %>%
   mutate(oblast_before_ua = as.character(as_factor(demo_oblast)),
          oblast_before_en = fct_recode(oblast_before_ua,
@@ -659,6 +698,7 @@ data_clean <- data_copy %>%
          -q17,
          -q18,
          -q19,
+         -educ_ua,
          -demo_oblast, 
          -demo_age_int, 
          -demo_gender, 
@@ -1193,11 +1233,11 @@ ggplot(plot_discount, aes(x = score)) +
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
 data_war <- dat_unique[,c(23:37,46, 63)]
 
-mod <- lm(score ~ . - 1, data = data_war)
-mod_pres <- glm(presbias ~ . - 1, data = dat_unique[,c(23:37, 64)], family = binomial("logit"))
-mod_absol <- glm(absolmag ~ . - 1, data = dat_unique[,c(23:37, 65)], family = binomial("logit"))
-mod_gainloss <- glm(gainloss ~ . - 1, data = dat_unique[,c(23:37, 66)], family = binomial("logit"))
-mod_delay <- glm(delayspeed ~ . - 1, data = dat_unique[,c(23:37, 67)], family = binomial("logit"))
+mod <- lm(score ~ ., data = data_war)
+mod_pres <- glm(presbias ~ ., data = dat_unique[,c(23:37, 64)], family = binomial("logit"))
+mod_absol <- glm(absolmag ~ ., data = dat_unique[,c(23:37, 65)], family = binomial("logit"))
+mod_gainloss <- glm(gainloss ~ ., data = dat_unique[,c(23:37, 66)], family = binomial("logit"))
+mod_delay <- glm(delayspeed ~ ., data = dat_unique[,c(23:37, 67)], family = binomial("logit"))
 
 stargazer(mod, mod_pres, mod_absol, mod_gainloss, mod_delay,
           covariate.labels = c("Evacuation", 
@@ -1335,7 +1375,7 @@ mod_ord_test3 <- lm(score ~ q21+ inc_5 + inc_20 + inc_40 + inc_60 + inc_80 + inc
 (p.val <- pchisq(teststat, df = 4, lower.tail = FALSE))
 
 
-#######################################3
+#######################################
 mod_ord_test1 <- lm(score ~ q21_1, data = data_ordinal)
 mod_ord_test2 <- lm(score ~ finc_5 + finc_20 + finc_40 + finc_60 + finc_80 + finc_100, data = data_ordinal)
 mod_ord_test3 <- lm(score ~ q21_1 + finc_5 + finc_20 + finc_40 + finc_60 + finc_80 + finc_100, data = data_ordinal)
@@ -1405,7 +1445,16 @@ mod_ord_test3 <- lm(score ~ q26_3 + sad_always + sad_more + sad_freq + sad_often
 
 
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
+convert_labelled_to_numeric <- function(variable) {
+  if (inherits(variable, "haven_labelled")) {
+    return(as.numeric(as.character(variable)))
+  } else {
+    return(variable)
+  }
+}
+
 data_mediation <- dat_unique[, c(14:18,20:31,33:37,41,43,46,47,50,63:67)]
+
 colnames(data_mediation) <- c("inc_indiv",
                               "inc_house",
                               "fwb_expect",
@@ -1438,6 +1487,10 @@ colnames(data_mediation) <- c("inc_indiv",
                               "absolmag",
                               "gainloss",
                               "delayspeed")
+
+data_mediation <- data_mediation %>%  
+  mutate(across(everything(), convert_labelled_to_numeric)) %>% 
+  mutate(score.c = c(scale(score))) 
 
 #Which aspect of war is highly associated with TD?
 mod_association_score <- lm(score ~ evacuate + occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + no_effect - 1, data = data_mediation)
@@ -1494,7 +1547,7 @@ mod_war_td <- lm(score ~ evacuate - 1, data = data_mediation)
 mod_war_fwb <- lm(fwb_war ~ evacuate - 1, data = data_mediation)
 
 #3.2 Path D (FWB on TD, controlling for War)
-mod_fwb_td <- lm(score ~ fwb_war + evacuate - 1, data = data_mediation)
+mod_fwb_td <- lm(score ~ fwb_war - 1, data = data_mediation)
 
 #4.1 Total 
 mod_total_fwb <- lm(score ~ fwb_war + evacuate - 1, data = data_mediation)
@@ -1514,6 +1567,157 @@ sobel(data_mediation$War, data_mediation$MH, data_mediation$score)
 
 #Path B
 sobel(data_mediation$War, data_mediation$FWB, data_mediation$score)
+```
+
+
+```{r}
+data_med_copy <- data_mediation
+
+convert_labelled_to_numeric <- function(variable) {
+  if (inherits(variable, "haven_labelled")) {
+    return(as.numeric(as.character(variable)))
+  } else {
+    return(variable)
+  }
+}
+
+data_med_copy <- data_med_copy %>% mutate(across(everything(), convert_labelled_to_numeric))
+
+med_full_fit <- lm(score ~ evacuate +
+                     fwb_expect + 
+                     fwb_war +
+                     fwb_debts +
+                     mh_sad - 1, 
+                   data = data_med_copy)
+
+med_full_fwb_expect <- lm(fwb_expect ~ evacuate - 1, 
+                   data = data_med_copy)
+  
+med_full_fwb_war <- lm(fwb_war ~ evacuate - 1, 
+                   data = data_med_copy)
+
+
+med_full_fwb_debts <- lm(fwb_debts ~ evacuate - 1, 
+                   data = data_med_copy)
+  
+med_full_mh_sad <-  lm(mh_sad ~ evacuate - 1, 
+                   data = data_med_copy)
+  
+stargazer(med_full_fit, 
+          med_full_fwb_expect, 
+          med_full_fwb_war, 
+          med_full_fwb_debts,
+          #med_full_mh_sad,
+          header=FALSE,
+          type='text', 
+          digits=3,
+          font.size = "normalsize",
+          align = TRUE,
+          omit.stat=c("f", "ser"),
+          column.sep.width = "-25pt")
+
+
+```
+
+
+```{r}
+med_fit <- lm(fwb_war ~ evacuate - 1, data = data_med_copy)
+out_fit <- lm(score ~ fwb_war + evacuate - 1, data = data_med_copy)
+
+med_out <- mediate(med_fit, out_fit, 
+        treat = "evacuate",
+        mediator = "fwb_war",
+        robustSE = FALSE)
+
+
+summary(med_out)
+```
+
+```{r}
+install.packages("bruceR")
+library(bruceR)
+
+data_mediation <- bind_cols(data_mediation, dummies)
+
+PROCESS(data = data_mediation, 
+        y = "score.c", 
+        x = "evacuate", 
+        meds = c("fwb_war", "fwb_expect", "fwb_debts", "mh_sad"),
+        med.type = "parallel",
+        covs = c("age", "gender", "inc_indiv", "inc_house"),
+        nsim = 1000,
+        ci = "mcmc",
+        seed = 4321)
+
+PROCESS(data = data_mediation, 
+        y = "score.c", 
+        x = "bombing", 
+        meds = c("fwb_war", "fwb_expect", "fwb_debts", "mh_sad"),
+        med.type = "parallel",
+        covs = c("age", "gender", "inc_indiv", "inc_house"),
+        nsim = 1000,
+        ci = "mcmc",
+        seed = 4321)
+
+
+PROCESS(data = data_mediation, 
+        y = "score.c", 
+        x = "occupation", 
+        meds = c("fwb_war", "fwb_expect", "fwb_debts", "mh_sad"),
+        covs = c("age", "gender", "inc_indiv", "inc_house"),
+        nsim = 1000,
+        seed = 4321)
+
+PROCESS(data = data_mediation, 
+        y = "score.c", 
+        x = "prop_dmg", 
+        meds = c("fwb_war", "fwb_expect", "fwb_debts", "mh_sad"),
+        med.type = "parallel",
+        covs = c("age", "gender", "inc_indiv", "inc_house"),
+        nsim = 1000,
+        ci = "mcmc",
+        seed = 4321)
+
+
+PROCESS(data = data_mediation, 
+        y = "score.c", 
+        x = "emo_viol", 
+        meds = c("fwb_war", "fwb_expect", "fwb_debts", "mh_sad"),
+        med.type = "parallel",
+        covs = c("age", "gender", "inc_indiv", "inc_house"),
+        nsim = 1000,
+        ci = "mcmc",
+        seed = 4321)
+
+PROCESS(data = data_mediation, 
+        y = "score.c", 
+        x = "robbery", 
+        meds = c("fwb_war", "fwb_expect", "fwb_debts", "mh_sad"),
+        med.type = "parallel",
+        covs = c("age", "gender", "inc_indiv", "inc_house"),
+        nsim = 1000,
+        ci = "mcmc",
+        seed = 4321)
+
+PROCESS(data = data_mediation, 
+        y = "score.c", 
+        x = "fam_death", 
+        meds = c("fwb_war", "fwb_expect", "fwb_debts", "mh_sad"),
+        med.type = "parallel",
+        covs = c("age", "gender", "inc_indiv", "inc_house"),
+        nsim = 1000,
+        ci = "mcmc",
+        seed = 4321)
+
+PROCESS(data = data_mediation, 
+        y = "score.c", 
+        x = "fam_afu", 
+        meds = c("fwb_war", "fwb_expect", "fwb_debts", "mh_sad", "depression", "insom", "confid_loss"),
+        med.type = "parallel",
+        covs = c("age", "gender", "inc_indiv", "inc_house"),
+        nsim = 1000,
+        ci = "mcmc",
+        seed = 4321)
 ```
 
 
