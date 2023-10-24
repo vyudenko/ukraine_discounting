@@ -307,7 +307,7 @@ convert_labelled_to_numeric <- function(variable) {
 }
 ```
 
-```{r}
+```{r data prep}
 data_clean <- data_copy %>%
   mutate(oblast_before_ua = as.character(as_factor(demo_oblast)),
          oblast_before_en = fct_recode(oblast_before_ua,
@@ -481,15 +481,41 @@ data_clean <- data_copy %>%
                                        "West" = "Західний",
                                        "North" = "Північний",
                                        "East" = "Східний"),
-         age = as.character(as_factor(demo_age_int)),
+         age_int = as.character(as_factor(demo_age_int)),
          gender_ua = as.character(as_factor(demo_gender)),
-         gender_en = fct_recode(gender_ua,
-                                "Female" = "Жіноча",
-                                "Male" = "Чоловіча"),
+         gender = ifelse(gender_ua == "Жіноча", 0, ifelse(gender_ua == "Чоловіча", 1, NA)),
          educ_ua = as.character(as_factor(education)),
          region_war = case_when(
            oblast_before_en %in% c("Donetsk Region", "Zhytomyr Region", "Zaporizhzhia Region", "Kyiv City", "Kyiv Region", "Mykolaiv Region", "Sumy Region", "Kharkiv Region", "Kherson Region", "Chernihiv Region") ~ 1,
            TRUE ~ 0)) %>%
+    mutate(geo = case_when(
+    str_detect(oblast_before_en, "Vinnytsia Region") ~ "UA-05",
+    str_detect(oblast_before_en, "Volyn Region") ~ "UA-07",
+    str_detect(oblast_before_en, "Dnipropetrovsk Region") ~ "UA-12",
+    str_detect(oblast_before_en, "Donetsk Region") ~ "UA-14",
+    str_detect(oblast_before_en, "Zhytomyr Region") ~ "UA-18",
+    str_detect(oblast_before_en, "Zakarpattia Region") ~ "UA-21",
+    str_detect(oblast_before_en, "Zaporizhzhia Region") ~ "UA-23",
+    str_detect(oblast_before_en, "Ivano-Frankivsk Region") ~ "UA-26",
+    str_detect(oblast_before_en, "Kyiv City") ~ "UA-30",
+    str_detect(oblast_before_en, "Kyiv Region") ~ "UA-32",
+    str_detect(oblast_before_en, "Kirovohrad Region") ~ "UA-35",
+    str_detect(oblast_before_en, "Luhansk Region") ~ "UA-09",
+    str_detect(oblast_before_en, "Lviv Region") ~ "UA-46",
+    str_detect(oblast_before_en, "Mykolaiv Region") ~ "UA-48",
+    str_detect(oblast_before_en, "Odesa Region") ~ "UA-51",
+    str_detect(oblast_before_en, "Poltava Region") ~ "UA-53",
+    str_detect(oblast_before_en, "Rivne Region") ~ "UA-56",
+    str_detect(oblast_before_en, "Sumy Region") ~ "UA-59",
+    str_detect(oblast_before_en, "Ternopil Region") ~ "UA-61",
+    str_detect(oblast_before_en, "Kharkiv Region") ~ "UA-63",
+    str_detect(oblast_before_en, "Kherson Region") ~ "UA-65",
+    str_detect(oblast_before_en, "Khmelnytskyi Region") ~ "UA-68",
+    str_detect(oblast_before_en, "Cherkasy Region") ~ "UA-71",
+    str_detect(oblast_before_en, "Chernivtsi Region") ~ "UA-74",
+    str_detect(oblast_before_en, "Chernihiv Region") ~ "UA-77",
+    TRUE ~ NA_character_
+  )) %>% 
   mutate(stipend_main = ifelse(q20 == 1, 1, 0),
          pension_main = ifelse(q20 == 2, 1, 0),
          govpay_main = ifelse(q20 == 3, 1, 0),
@@ -498,6 +524,27 @@ data_clean <- data_copy %>%
          relatives_main = ifelse(q20 == 6, 1, 0),
          other_main = ifelse(q20 == 7, 1, 0),
          no_main = ifelse(q20 == 8, 1, 0)) %>% 
+  rename(
+    "debts" = "q24",
+    "evacuate" = "q27_1",
+    "occupation" = "q27_2",
+    "bombing" = "q27_3",
+    "prop_dmg" = "q27_4",
+    "phys_viol" = "q27_5",
+    "emo_viol" = "q27_6",
+    "robbery" = "q27_7",
+    "fam_afu" = "q27_8",
+    "fam_death" = "q27_9",
+    "war_no_ans" = "q27_10",
+    "phys_injury" = "q28_1",
+    "depression" = "q28_2",
+    "confid_loss" = "q28_3",
+    "insom" = "q28_4",
+    "no_effect" = "q28_5",
+    "eff_no_ans" = "q28_6",
+    "war_last" = "q39",
+    "age" = "demo_age",
+    "return" = "geosoc10") %>% 
   mutate(debts_small = ifelse(q25 == 1, 1, 0),
          debts_medium = ifelse(q25 == 2, 1, 0),
          debts_big = ifelse(q25 == 3, 1, 0)) %>% 
@@ -513,16 +560,16 @@ data_clean <- data_copy %>%
          finc_60 = ifelse(q21_1 == 4, 1, 0),
          finc_80 = ifelse(q21_1 == 5, 1, 0),
          finc_100 = ifelse(q21_1 == 6, 1, 0)) %>% 
-  mutate(expect_much_better = ifelse(q22 == 1, 1, 0),
-         expect_better = ifelse(q22 == 2, 1, 0),
+  mutate(expect_much_better = ifelse(q22 == 5, 1, 0),
+         expect_better = ifelse(q22 == 4, 1, 0),
          expect_same = ifelse(q22 == 3, 1, 0),
-         expect_worse = ifelse(q22 == 4, 1, 0),
-         expect_much_worse = ifelse(q22 == 5, 1, 0)) %>% 
-  mutate(change_much_better = ifelse(q23 == 1, 1, 0),
-         change_better = ifelse(q23 == 2, 1, 0),
+         expect_worse = ifelse(q22 == 2, 1, 0),
+         expect_much_worse = ifelse(q22 == 1, 1, 0)) %>% 
+  mutate(change_much_better = ifelse(q23 == 5, 1, 0),
+         change_better = ifelse(q23 == 4, 1, 0),
          change_same = ifelse(q23 == 3, 1, 0),
-         change_worse = ifelse(q23 == 4, 1, 0),
-         change_much_worse = ifelse(q23 == 5, 1, 0)) %>% 
+         change_worse = ifelse(q23 == 2, 1, 0),
+         change_much_worse = ifelse(q23 == 1, 1, 0)) %>% 
   mutate(calm_always = ifelse(q26_1 == 1, 1, 0),
          calm_more = ifelse(q26_1 == 2, 1, 0),
          calm_freq = ifelse(q26_1 == 3, 1, 0),
@@ -561,7 +608,7 @@ data_clean <- data_copy %>%
   mutate(left_within_oblast = ifelse(geosoc7 == 1, 1, 0),
          left_other_oblast = ifelse(geosoc7 == 2, 1, 0),
          left_abroad = ifelse(geosoc7 == 3, 1, 0)) %>% 
-#  mutate(abroad = ifelse(geosoc9 == c(1,2,3,4), 1, 0)) %>% 
+  mutate(country_abroad = ifelse(geosoc9 %in% c(1,2,3,4), 1, 0)) %>% 
   select(-q2, 
          -q3, 
          -q4, 
@@ -581,38 +628,65 @@ data_clean <- data_copy %>%
          -q17,
          -q18,
          -q19,
+         -q20,
+         -open_q20_7,
+         -q20_1_1,
+         -q20_1_2,
+         -q20_1_3,
+         -q20_1_4,
+         -q20_1_5,
+         -q20_1_6,
+         -q20_1_7,
+         -q20_1_8,
+         -open_q20_1_7,
+         -q21,
+         -q21_1,
+         -q22,
+         -q23,
+         -q25,
+         -q26_1,
+         -q26_2,
+         -q26_3,
+         -open_q39_5,
+         -geosoc1,
+         -geosoc2,
+         -geosoc3,
+         -open_geosoc3_4,
+         -geosoc6,
+         -geosoc7,
+         -geosoc9,
+         -open_geosoc9_4,
          -educ_ua,
          -demo_oblast, 
          -demo_age_int, 
          -demo_gender, 
          -demo_region, 
          -demo_city, 
-         -demo_сity_size, 
+         -demo_сity_size,
          -oblast_moving,
          -oblast_moving_ua,
          -region_moving,
          -region_moving_ua,
          -education, 
-         -region_before_ua, 
+         -region_before_ua,
          -gender_ua, 
          -oblast_before_ua, 
          -city_before_ua,
          -city_size_before_ua,
-         -city_moving)
+         -сity_size_moving,
+         -city_moving,
+         -weight)
 
-
-
-
-dummies <- model.matrix(~ oblast_before_en - 1, data_clean) %>%
-  as.data.frame()
-
-# To join the dummy variables back to your original dataset:
-data_with_dummies <- bind_cols(data_clean, dummies)
+# dummies <- model.matrix(~ oblast_before_en - 1, data_clean) %>%
+#   as.data.frame()
+# 
+# # To join the dummy variables back to your original dataset:
+# data_with_dummies <- bind_cols(data_clean, dummies)
 ```
 
 ```{r discounting}
 dat_items <- 
-  data_copy %>%
+  data_copy[, c(1:18)] %>%
   arrange(ResponseId) %>% 
   mutate(amount_later16 = case_when(
     q2 == 1 & q5 == 0 ~ 550,
@@ -759,50 +833,17 @@ dat_unique <- dat_items %>%
   distinct(ResponseId, .keep_all = TRUE) %>% 
   select(-question, -amount_later, -question_num, -block, -choice, -choice_text)
 
-#rm(q,scores, presbias, absolmag, gainloss, delayspeed, subaddit, est_scores)
+rm(q,scores, presbias, absolmag, gainloss, delayspeed)
 ```
 
 ```{r data prep}
+dt <- data_clean %>% 
+  left_join(dat_unique, by = "ResponseId")
 
 
-
- c("inc_indiv",
-                              "inc_house",
-                              "fwb_expect",
-                              "fwb_war",
-                              "fwb_debts",
-                              "mh_calm",
-                              "mh_energy",
-                              "mh_sad",
-                              "evacuate", 
-                              "occupation", 
-                              "bombing",
-                              "prop_dmg", 
-                              "phys_viol", 
-                              "emo_viol", 
-                              "robbery", 
-                              "fam_afu", 
-                              "fam_death", 
-                              "phys_injury", 
-                              "depression", 
-                              "confid_loss",
-                              "insom",
-                              "no_effect", 
-                              "family_stat",
-                              "child_live",
-                              "gender",
-                              "age",
-                              "oblast",
-                              "score",
-                              "presbias",
-                              "absolmag",
-                              "gainloss",
-                              "delayspeed")
-
-data_mediation <- data_mediation %>%  
+dt <- dt %>%  
   mutate(across(everything(), convert_labelled_to_numeric)) %>% 
   mutate(score.c = c(scale(score))) 
-
 
 ```
 
@@ -811,169 +852,9 @@ data_mediation <- data_mediation %>%
 
 # Calculating temporal discounting score and anomalies
 
-writexl::write_xlsx(dat_unique, "survey.xlsx", col_names = TRUE)
-writexl::write_xlsx(data_clean, "survey_1.xlsx", col_names = TRUE)
+# writexl::write_xlsx(dt, "survey.xlsx", col_names = TRUE)
+# writexl::write_xlsx(data_clean, "survey_1.xlsx", col_names = TRUE)
 ```
-
-```{r}
-# Survey answers deciphered
-
-# oblast_before - Де Ви проживали до 24 лютого 2022 року?
-#...
-
-# geosoc6 - Що найкраще описує Ваші дії після початку повномасштабного вторгнення 24 лютого 2022 року?
-
-# 1 - Я залишився(лась) в своєму місті (те, в якому проживав до 24.02.2022) 
-# 2 - Я покинув(ла) своє місто (те, в якому проживав до 24.02.2022) і вже повернувся(лась) до цього міста назад
-# 3 - Я покинув(ла) своє місто (те, в якому проживав до 24.02.2022) і НЕ повернувся(лась) до цього міста назад
-
-
-# geosoc7 - Куди Ви переїждали після початку повномасштабного вторгнення (після 24 лютого 2022 року)? (якщо Ви переїжджали кілька разів, виберіть варіант, де Ви залишалися найдовше)
-# 1 - В межах моєї області
-# 2 - В іншу область України
-# 3 - За кордон
-
-
-# oblast_moving - До якої області Ви переїжджали після початку повномасштабного вторгнення (після 24 лютого 2022 року)?
-#...
-
-# geosoc9 - До якої країни Ви переїждали після початку повномасштабного вторгнення (після 24 лютого 2022 року?
-# 1 - Польша
-# 2 - Німеччина
-# 3 - Чехія
-# 4 - Інша
-
-# geosoc10 - Чи плануєте Ви повернутись в Україну?
-# 1 - Так, планую
-# 2  - Ні, не планую
-# 3 - Ще не визначився(лась)
-
-
-# q21 - Який Ваш індивідуальний середній місячний дохід у 2023 році (усі джерела)?
-# 1 - Менше 5 000 грн
-# 2 - 5 000 - 19 999 грн
-# 3 - 20 000 - 39 999 грн
-# 4 - 40 000 - 59 999 грн
-# 5 - 60 000 - 79 999 грн
-# 6 - Більше 80 000 грн
-# 7 - Не хочу відповідати
-
-# q21_1 - Який Ваш сімейний середній місячний дохід у 2023 році (усі джерела)?
-# 1 - Менше 5 000 грн
-# 2 - 5 000 - 19 999 грн
-# 3 - 20 000 - 39 999 грн
-# 4 - 40 000 - 59 999 грн
-# 5 - 60 000 - 79 999 грн
-# 6 - Більше 80 000 грн
-# 7 - Не хочу відповідати
-
-# q22 - Які Ваші очікування щодо власного фінансового становища на наступні 12 місяців? Я очікую що…
-# 1 - Буде набагато гірше, ніж зараз
-# 2 - Буде дещо гірше, ніж зараз
-# 3 - Буде приблизно так само
-# 4 - Буде дещо краще, ніж зараз
-# 5 - Буде набагато краще, ніж зараз
- 
-# q23 - Загалом, враховуючи вплив повномаштабної війни, як змінилося Ваше фінансове становище протягом війни, порівняно з початком 2022 року?
-# 1 - Суттєво погіршилось
-# 2 - Дещо погіршилось
-# 3 - Ніяк не змінилось
-# 4 - Дещо покращилось
-# 5 - Суттєво покращилось
-
-# q24 - Чи є у Вас наразі будь-які фінансові зобов'язання (оплата по кредиту, аліменти, штрафи, іпотека, розстрочка, кредитний ліміт тощо), які Вам необхідно сплатити?
-# Так, є
-# Ні, немає
-
-# q25 - Яку частину Ваших місячних доходів Ви витрачаєте на виплату фінансових зобов'язань?
-# 1 - Меншу частину
-# 2 - Половину
-# 3 - Більшу частину
-
-# q26_1 - Скільки часу протягом останніх чотирьох тижнів Ви почувалися спокійним(ою)?
-# 1 - Весь час
-# 2 - Більшу частину часу
-# 3 - Досить часто
-# 4 - Іноді
-# 5 - Меншу частину часу
-# 6 - Зовсім не почувався(лась) спокійним(ою)
- 
-# q26_2 - Скільки часу протягом останніх чотирьох тижнів Ви почувалися сповненими енергії?
-# 1 - Весь час
-# 2 - Більшу частину часу
-# 3 - Досить часто
-# 4 - Іноді
-# 5 - Меншу частину часу
-# 6 - Зовсім не почувався(лась) сповненим(ою) енергією
- 
-# q26_3 - Скільки часу протягом останніх чотирьох тижнів Ви почувалися пригнічено?
-# 1 - Весь час
-# 2 - Більшу частину часу
-# 3 - Досить часто
-# 4 - Іноді
-# 5 - Меншу частину часу
-# 6 - Зовсім не почувався(лась) пригніченим(ою)
-
-#q27_intro - Наступні запитання стосуються Вашого досвіду повномасштабної війни. Вони можуть бути досить чутливими для деяких людей. Ваші відповіді дуже важливі для нас, і якщо Ви не хочете відповідати на них, то можете обрати "Не хочу відповідати"
-
-# q27 - Виберіть усе, з чим Ви стикалися з початку повномасштабної війни?
-
-# q27_1 - Евакуація
-# q27_2 - Життя на окупованій території
-# q27_3 - Стрілянина / бомбардування / ракетні атаки
-# q27_4 - Пошкодження власного майна внаслідок бойових дій
-# q27_5 - Фізичне насилля зі зброєю або без неї
-# q27_6 - Емоційне насилля (погроза фізичної розправи, приниження, залякування)
-# q27_7 - Пограбування, крадіжка або шахрайство
-# q27_8 - Служба близької людини у складі Сил оборони України (ЗСУ, Нацгвардія)
-# q27_9 - Втрата близької людини (родича, друга) внаслідок військової агресії росії
-# q27_10 - Не хочу відовідати
-
-# q28 - Чи страждали Ви від будь-якої з наведених нижче проблем, що виникли після початку війни в лютому 2022 року?
-
-# q28_1 - Тілесні ушкодження (поранення, переломи тощо)
-# q28_2 - Депресія, тривога або панічні атаки
-# q28_3 - Втрата впевненості в собі, відчуття вразливості
-# q28_4 - Труднощі зі сном та / або концентрацією
-# q28_5 - Жоден з вищеперелічених варіантів
-# q28_6 - Не хочу відповідати
-
-# q39 - На Вашу думку, як довго триватимуть активні бойові дії в Україні?
-# 1 - До кінця осені 2023
-# 2 - До зими 2023-2024
-# 3 - До кінця 2024 року
-# 4 - Активні бойові дії розтягнуться на роки
-# 5 - Інше
-# 6 - Важко відповісти
-
-# geosoc1 - Який Ваш сімейний статус?
-# 1 - Неодружений / незаміжня
-# 2 - Одружений / заміжня і проживаю РАЗОМ з чоловіком / дружиною
-# 3 - Одружений / заміжня і зараз проживаю з чоловіком / дружиною ОКРЕМО
-# 4 - Цивільний шлюб
-# 5 - Розлучений / розлучена
-# 6 - Вдівець / вдова
-# 7 - Не хочу відповідати
-
-# geosoc2 - Чи є у Вас діти?
-# 1 - Так, є тільки діти до 18 років
-# 2 - Так, є тільки повнолітні (старше 18 років) діти
-# 3 - Так, є як повнолітні, так і неповнолітні діти
-# 4 - Ні, але наразі очікуємо на появу
-# 5 - Ні, немає дітей
-
-# geosoc3 - Чи проживаєте Ви разом зі своїми неповнолітніми дітьми?
-# 1 - Проживаю разом з усіма своїми неповнолітніми дітьми
-# 2 - Проживаю разом з деякими своїми неповнолітніми дітьми, не з усіма
-# 3 - Не проживаю разом зі своїми неповнолітніми дітьми
-# 4 - Інше
-
-
-
-```
-
-
-
 
 
 ## EDA
@@ -1106,6 +987,16 @@ g4 <- check %>%
 
 # Arrange Plots
 gridExtra::grid.arrange(g1, g2, g3, g4, ncol = 2)
+
+
+ggplot(data_clean, aes(x = as.factor(q20))) +
+  geom_bar() +
+  geom_text(aes(label = ..count..), 
+            stat = 'count', vjust = -0.5, 
+            color = "black", size = 5, 
+            family = "Garamond") +
+  theme_classic()
+
 ```
 
 ```{r}
@@ -1126,27 +1017,49 @@ ggplot(data_copy, aes(x = q19)) +
                                 "9 months",
                                 "12 months"))
 
-ggplot(data_copy, aes(x = q2)) +
-  geom_bar() +
-  labs(title = "Q1",
-       x = "",
-       y = "# of responders") +
-  geom_text(aes(label = ..count..), 
-            stat = 'count', vjust = -0.5, 
-            color = "black", size = 5, 
-            family = "Garamond") +
-  theme_classic()
 
-ggplot(data_copy, aes(x = q18)) +
+##########################
+ggplot(data_copy, aes(x = as.factor(demo_age_int))) +
   geom_bar() +
-  labs(title = "Q1",
+  labs(title = "",
        x = "",
        y = "# of responders") +
   geom_text(aes(label = ..count..), 
             stat = 'count', vjust = -0.5, 
             color = "black", size = 5, 
             family = "Garamond") +
-  theme_classic()
+  theme_classic() +
+  theme(text = element_text(family = "Garamond", size = 14),
+        plot.caption = element_text(size = 11),
+        plot.title = element_text(hjust = 0.5),
+        axis.line.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.text.y = element_blank()) +
+  scale_x_discrete(breaks = c(3,4,5,6,7), 
+                     labels = c("18 - 24",
+                                "25 - 34",
+                                "35 - 44",
+                                "45 - 54",
+                                "55 - 60"))
+########################
+
+
+ggplot(data_copy, aes(x = as.factor(education))) +
+  geom_bar() +
+  labs(title = "",
+       x = "",
+       y = "# of responders") +
+  geom_text(aes(label = ..count..), 
+            stat = 'count', vjust = -0.5, 
+            color = "black", size = 5, 
+            family = "Garamond") +
+  theme_classic() +
+  theme(text = element_text(family = "Garamond", size = 14),
+        plot.caption = element_text(size = 11),
+        plot.title = element_text(hjust = 0.5),
+        axis.line.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.text.y = element_blank())
 
 ```
 
@@ -1391,6 +1304,16 @@ table_temp %>%
   
   tab_header(
     title = 'Table N. Summary Statistics of Temporal Discounting Questions') 
+
+
+
+#####
+library(doBy)
+summaryBy(fwb_war ~ debts, data = dt,
+  FUN = function(x) {
+c(m = mean(x), s = sd(x))
+} )
+####
 ```
 
 
@@ -1408,138 +1331,8 @@ require(pequod)
 ```
 
 
-```{r LR test for ordinal variables}
-#treating ordinal data as continuous
-data_ordinal <- dat_unique[, c(14:18,20:31,33:37,41,43,46,47,50,63:67)] %>% 
-  mutate(inc_5 = ifelse(q21 == 1, 1, 0),
-         inc_20 = ifelse(q21 == 2, 1, 0),
-         inc_40 = ifelse(q21 == 3, 1, 0),
-         inc_60 = ifelse(q21 == 4, 1, 0),
-         inc_80 = ifelse(q21 == 5, 1, 0),
-         inc_100 = ifelse(q21 == 6, 1, 0)) %>%
-  mutate(finc_5 = ifelse(q21_1 == 1, 1, 0),
-         finc_20 = ifelse(q21_1 == 2, 1, 0),
-         finc_40 = ifelse(q21_1 == 3, 1, 0),
-         finc_60 = ifelse(q21_1 == 4, 1, 0),
-         finc_80 = ifelse(q21_1 == 5, 1, 0),
-         finc_100 = ifelse(q21_1 == 6, 1, 0)) %>% 
-  mutate(expect_much_better = ifelse(q22 == 1, 1, 0),
-         expect_better = ifelse(q22 == 2, 1, 0),
-         expect_same = ifelse(q22 == 3, 1, 0),
-         expect_worse = ifelse(q22 == 4, 1, 0),
-         expect_much_worse = ifelse(q22 == 5, 1, 0)) %>% 
-  mutate(change_much_better = ifelse(q23 == 1, 1, 0),
-         change_better = ifelse(q23 == 2, 1, 0),
-         change_same = ifelse(q23 == 3, 1, 0),
-         change_worse = ifelse(q23 == 4, 1, 0),
-         change_much_worse = ifelse(q23 == 5, 1, 0)) %>% 
-  mutate(calm_always = ifelse(q26_1 == 1, 1, 0),
-         calm_more = ifelse(q26_1 == 2, 1, 0),
-         calm_freq = ifelse(q26_1 == 3, 1, 0),
-         calm_often = ifelse(q26_1 == 4, 1, 0),
-         calm_less = ifelse(q26_1 == 5, 1, 0),
-         calm_never = ifelse(q26_1 == 6, 1, 0)) %>% 
-  mutate(energy_always = ifelse(q26_2 == 1, 1, 0),
-         energy_more = ifelse(q26_2 == 2, 1, 0),
-         energy_freq = ifelse(q26_2 == 3, 1, 0),
-         energy_often = ifelse(q26_2 == 4, 1, 0),
-         energy_less = ifelse(q26_2 == 5, 1, 0),
-         energy_never = ifelse(q26_2 == 6, 1, 0)) %>% 
-  mutate(sad_always = ifelse(q26_3 == 1, 1, 0),
-         sad_more = ifelse(q26_3 == 2, 1, 0),
-         sad_freq = ifelse(q26_3 == 3, 1, 0),
-         sad_often = ifelse(q26_3 == 4, 1, 0),
-         sad_less = ifelse(q26_3 == 5, 1, 0),
-         sad_never = ifelse(q26_3 == 6, 1, 0))
-
-mod_ord_test1 <- lm(score ~ q21, data = data_ordinal)
-mod_ord_test2 <- lm(score ~ inc_5 + inc_20 + inc_40 + inc_60 + inc_80 + inc_100, data = data_ordinal)
-mod_ord_test3 <- lm(score ~ q21+ inc_5 + inc_20 + inc_40 + inc_60 + inc_80 + inc_100, data = data_ordinal)
-
-(A <- logLik(mod_ord_test1))
-(B <- logLik(mod_ord_test2))
-(teststat <- -2 * (as.numeric(A)-as.numeric(B)))
-(p.val <- pchisq(teststat, df = 4, lower.tail = FALSE))
-
-
-#######################################
-mod_ord_test1 <- lm(score ~ q21_1, data = data_ordinal)
-mod_ord_test2 <- lm(score ~ finc_5 + finc_20 + finc_40 + finc_60 + finc_80 + finc_100, data = data_ordinal)
-mod_ord_test3 <- lm(score ~ q21_1 + finc_5 + finc_20 + finc_40 + finc_60 + finc_80 + finc_100, data = data_ordinal)
-
-(A <- logLik(mod_ord_test1))
-(B <- logLik(mod_ord_test2))
-(teststat <- -2 * (as.numeric(A)-as.numeric(B)))
-(p.val <- pchisq(teststat, df = 5, lower.tail = FALSE))
-# only here more complex model is preferred - use dummies(!)
-#############################################
-
-
-mod_ord_test1 <- lm(score ~ q22, data = data_ordinal)
-mod_ord_test2 <- lm(score ~ expect_much_better + expect_better + expect_same + expect_worse + expect_much_worse, data = data_ordinal)
-mod_ord_test3 <- lm(score ~ q22 + expect_much_better + expect_better + expect_same + expect_worse + expect_much_worse, data = data_ordinal)
-
-(A <- logLik(mod_ord_test1))
-(B <- logLik(mod_ord_test2))
-(teststat <- -2 * (as.numeric(A)-as.numeric(B)))
-#df = 4 - 3 = 1
-(p.val <- pchisq(teststat, df = 3, lower.tail = FALSE))
-
-
-mod_ord_test1 <- lm(score ~ q23, data = data_ordinal)
-mod_ord_test2 <- lm(score ~ change_much_better + change_better + change_same + change_worse + change_much_worse, data = data_ordinal)
-mod_ord_test3 <- lm(score ~ q23 + change_much_better + change_better + change_same + change_worse + change_much_worse, data = data_ordinal)
-
-
-(A <- logLik(mod_ord_test1))
-(B <- logLik(mod_ord_test2))
-(teststat <- -2 * (as.numeric(A)-as.numeric(B)))
-(p.val <- pchisq(teststat, df = 3, lower.tail = FALSE))
-# we obseve decreasing scores as fwb changes for worse
-
-mod_ord_test1 <- lm(score ~ q26_1, data = data_ordinal)
-mod_ord_test2 <- lm(score ~ calm_always + calm_more + calm_freq + calm_often + calm_less + calm_never, data = data_ordinal)
-mod_ord_test3 <- lm(score ~ q26_1 + calm_always + calm_more + calm_freq + calm_often + calm_less + calm_never, data = data_ordinal)
-
-(A <- logLik(mod_ord_test1))
-(B <- logLik(mod_ord_test2))
-(teststat <- -2 * (as.numeric(A)-as.numeric(B)))
-(p.val <- pchisq(teststat, df = 4, lower.tail = FALSE))
-
-
-
-mod_ord_test1 <- lm(score ~ q26_2, data = data_ordinal)
-mod_ord_test2 <- lm(score ~ energy_always + energy_more + energy_freq + energy_often + energy_less + energy_never, data = data_ordinal)
-mod_ord_test3 <- lm(score ~ q26_2 + energy_always + energy_more + energy_freq + energy_often + energy_less + energy_never, data = data_ordinal)
-
-
-(A <- logLik(mod_ord_test1))
-(B <- logLik(mod_ord_test2))
-(teststat <- -2 * (as.numeric(A)-as.numeric(B)))
-(p.val <- pchisq(teststat, df = 4, lower.tail = FALSE))
-
-
-mod_ord_test1 <- lm(score ~ q26_3, data = data_ordinal)
-mod_ord_test2 <- lm(score ~ sad_always + sad_more + sad_freq + sad_often + sad_less + sad_never, data = data_ordinal)
-mod_ord_test3 <- lm(score ~ q26_3 + sad_always + sad_more + sad_freq + sad_often + sad_less + sad_never, data = data_ordinal)
-
-(A <- logLik(mod_ord_test1))
-(B <- logLik(mod_ord_test2))
-(teststat <- -2 * (as.numeric(A)-as.numeric(B)))
-(p.val <- pchisq(teststat, df = 4, lower.tail = FALSE))
-```
-
-
 
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
-convert_labelled_to_numeric <- function(variable) {
-  if (inherits(variable, "haven_labelled")) {
-    return(as.numeric(as.character(variable)))
-  } else {
-    return(variable)
-  }
-}
-
 data_mediation <- dat_unique[, c(14:18,20:31,33:37,41,43,46,47,50,63:67)]
 
 colnames(data_mediation) <- c("inc_indiv",
@@ -1587,21 +1380,120 @@ corr_med <- data_mediation %>%
 corrplot(corr_med, method="number", type="upper")
 corrplot::cor.mtest(corr_med, conf.level = 0.95)
 p.mat
+```
 
-
+```{r TD ~ War}
 #Which aspect of war is highly associated with TD?
-mod_association_score <- lm(score ~ evacuate + occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + no_effect - 1, data = data_mediation)
+mod_score <- lm(score.c ~ evacuate + occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + no_effect + age + gender, data = dt)
 
-mod_association_pres <- glm(presbias ~ evacuate + occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + no_effect - 1, data = data_mediation, family = binomial("logit"))
-hist(data_mediation$score)
+mod_pres <- glm(presbias ~ evacuate + occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + no_effect + age + gender, data = dt, family = binomial("logit"))
 
-mod_association_absol <- glm(absolmag ~ evacuate + occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + no_effect - 1, data = data_mediation, family = binomial("logit"))
 
-mod_association_gain <- glm(gainloss ~ evacuate + occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + no_effect - 1, data = data_mediation, family = binomial("logit"))
+mod_absol <- glm(absolmag ~ evacuate + occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + no_effect + age + gender, data = dt, family = binomial("logit"))
 
-mod_association_delay <- glm(delayspeed ~ evacuate + occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + no_effect - 1, data = data_mediation, family = binomial("logit"))
+mod_gain <- glm(gainloss ~ evacuate + occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + no_effect + age + gender, data = dt, family = binomial("logit"))
 
-stargazer(mod_association_score,
+mod_delay <- glm(delayspeed ~ evacuate + occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + no_effect + age + gender, data = dt, family = binomial("logit"))
+
+stargazer(mod_score, mod_pres, mod_absol, mod_gain, mod_delay,
+          header=FALSE,
+          type='text', 
+          digits=3,
+          font.size = "normalsize",
+          align = TRUE,
+          omit.stat=c("f", "ser"),
+          column.sep.width = "-25pt")
+```
+
+```{r TD ~ FWB}
+mod_fwb_score <- lm(score.c ~ inc_5 + inc_20 + inc_40 + inc_60 + inc_80 + inc_100 + finc_5 + finc_20 + finc_40 + finc_60 + finc_80 + finc_100 + expect_much_better + expect_better + expect_same + expect_worse + expect_much_worse + change_much_better + change_better + change_same + change_worse + change_much_worse + debts, dt)
+
+mod_fwb_pres <- glm(presbias ~ inc_5 + inc_20 + inc_40 + inc_60 + inc_80 + inc_100 + finc_5 + finc_20 + finc_40 + finc_60 + finc_80 + finc_100 + expect_much_better + expect_better + expect_same + expect_worse + expect_much_worse + change_much_better + change_better + change_same + change_worse + change_much_worse + debts, dt, family = binomial("logit"))
+
+mod_fwb_absl <- glm(absolmag ~ inc_5 + inc_20 + inc_40 + inc_60 + inc_80 + inc_100 + finc_5 + finc_20 + finc_40 + finc_60 + finc_80 + finc_100 + expect_much_better + expect_better + expect_same + expect_worse + expect_much_worse + change_much_better + change_better + change_same + change_worse + change_much_worse + debts, dt, family = binomial("logit"))
+
+mod_fwb_gl <- glm(gainloss ~ inc_5 + inc_20 + inc_40 + inc_60 + inc_80 + inc_100 + finc_5 + finc_20 + finc_40 + finc_60 + finc_80 + finc_100 + expect_much_better + expect_better + expect_same + expect_worse + expect_much_worse + change_much_better + change_better + change_same + change_worse + change_much_worse + debts, dt, family = binomial("logit"))
+
+mod_fwb_dl <- glm(delayspeed ~ inc_5 + inc_20 + inc_40 + inc_60 + inc_80 + inc_100 + finc_5 + finc_20 + finc_40 + finc_60 + finc_80 + finc_100 + expect_much_better + expect_better + expect_same + expect_worse + expect_much_worse + change_much_better + change_better + change_same + change_worse + change_much_worse + debts, dt, family = binomial("logit"))
+
+stargazer(mod_fwb_score, 
+          mod_fwb_pres, 
+          mod_fwb_absl, 
+          mod_fwb_gl,  
+          mod_fwb_dl, 
+          header=FALSE,
+          type='text', 
+          digits=3,
+          font.size = "normalsize",
+          align = TRUE,
+          omit.stat=c("f", "ser"),
+          column.sep.width = "-25pt")
+```
+
+
+```{r LR test for ordinal variables}
+#treating ordinal data as continuous
+dt <- data_copy[, c(1, 31:34, 37:39)] %>% 
+  rename("monthly_inc" = "q21",
+         "monthly_house_inc" = "q21_1",
+         "fwb_expect" = "q22",
+         "fwb_war" = "q23",
+         "feel_calm" = "q26_1",
+         "feel_energy" = "q26_2",
+         "feel_sad" = "q26_3") %>% 
+  mutate(
+    fwb_expect = case_when(
+      fwb_expect == 1 ~ -2,
+      fwb_expect == 2 ~ -1,
+      fwb_expect == 3 ~ 0,
+      fwb_expect == 4 ~ 1,
+      fwb_expect == 5 ~ 2),
+    fwb_war = case_when(
+      fwb_war == 1 ~ -2,
+      fwb_war == 2 ~ -1,
+      fwb_war == 3 ~ 0,
+      fwb_war == 4 ~ 1,
+      fwb_war == 5 ~ 2),
+    feel_calm = case_when(
+      feel_calm == 1 ~ 0,
+      feel_calm == 2 ~ 1,
+      feel_calm == 3 ~ 2,
+      feel_calm == 4 ~ 3,
+      feel_calm == 5 ~ 4,
+      feel_calm == 6 ~ 5),
+    feel_energy = case_when(  
+      feel_energy == 1 ~ 0,
+      feel_energy == 2 ~ 1,
+      feel_energy == 3 ~ 2,
+      feel_energy == 4 ~ 3,
+      feel_energy == 5 ~ 4,
+      feel_energy == 6 ~ 5),
+    feel_sad = case_when(
+      feel_sad == 1 ~ 0,
+      feel_sad == 2 ~ 1,
+      feel_sad == 3 ~ 2,
+      feel_sad == 4 ~ 3,
+      feel_sad == 5 ~ 4,
+      feel_sad == 6 ~ 5)) %>% 
+  left_join(dt, by = "ResponseId")
+
+mod_ord_test1 <- lm(score.c ~ monthly_inc + monthly_house_inc + fwb_expect + fwb_war + debts, data = dt)
+mod_ord_test2 <- lm(score.c ~ 
+                      inc_5 + inc_20 + inc_40 + inc_60 + inc_80 + inc_100 + finc_5 + 
+                      finc_20 + finc_40 + finc_60 + finc_80 + finc_100 +
+                      expect_much_better + expect_better + expect_worse + expect_much_worse + 
+                      change_much_better + change_better + change_worse + change_much_worse + 
+                      debts, data = dt)
+mod_ord_test3 <- lm(score.c ~ monthly_inc + monthly_house_inc + debts + fwb_expect + fwb_war + 
+                      inc_5 + inc_20 + inc_40 + inc_60 + inc_80 + inc_100 + finc_5 + 
+                      finc_20 + finc_40 + finc_60 + finc_80 + finc_100 +
+                      expect_much_better + expect_better + expect_worse + expect_much_worse + 
+                      change_much_better + change_better + change_worse + change_much_worse + 
+                      debts, data = dt)
+
+stargazer(mod_ord_test1,
+          mod_ord_test2,
+          mod_ord_test3,          
           header=FALSE,
           type='text', 
           digits=3,
@@ -1610,6 +1502,82 @@ stargazer(mod_association_score,
           omit.stat=c("f", "ser"),
           column.sep.width = "-25pt")
 
+(A <- logLik(mod_ord_test1))
+(B <- logLik(mod_ord_test2))
+(teststat <- -2 * (as.numeric(A)-as.numeric(B)))
+# df=23-7=16
+(p.val <- pchisq(teststat, df = 16, lower.tail = FALSE))
+
+
+#######################################
+mod_ord_test1 <- lm(score ~ q21_1, data = dt)
+mod_ord_test2 <- lm(score ~ finc_5 + finc_20 + finc_40 + finc_60 + finc_80 + finc_100, data = dt)
+mod_ord_test3 <- lm(score ~ q21_1 + finc_5 + finc_20 + finc_40 + finc_60 + finc_80 + finc_100, data = dt)
+
+(A <- logLik(mod_ord_test1))
+(B <- logLik(mod_ord_test2))
+(teststat <- -2 * (as.numeric(A)-as.numeric(B)))
+(p.val <- pchisq(teststat, df = 5, lower.tail = FALSE))
+# only here more complex model is preferred - use dummies(!)
+#############################################
+
+
+mod_ord_test4 <- lm(score.c ~ feel_calm + feel_energy + feel_sad, data = dt)
+mod_ord_test5 <- lm(score.c ~ 
+                      calm_always + calm_more + calm_freq + calm_less + calm_never +
+                      energy_always + energy_more + energy_freq + energy_less + energy_never +
+                      sad_always + sad_more + sad_freq + sad_less + sad_never, data = dt)
+mod_ord_test6 <- lm(score.c ~ 
+                      feel_calm + feel_energy + feel_sad + 
+                      calm_always + calm_more + calm_freq + calm_less + calm_never +
+                      energy_always + energy_more + energy_freq + energy_often + energy_less + energy_never +
+                      sad_always + sad_more + sad_freq + sad_less + sad_never, data = dt)
+
+
+stargazer(mod_ord_test4,
+          mod_ord_test5,
+          mod_ord_test6,          
+          header=FALSE,
+          type='text', 
+          digits=3,
+          font.size = "normalsize",
+          align = TRUE,
+          omit.stat=c("f", "ser"),
+          column.sep.width = "-25pt")
+
+(A2 <- logLik(mod_ord_test4))
+(B2 <- logLik(mod_ord_test5))
+#df=17-5
+(teststat2 <- -2 * (as.numeric(A2)-as.numeric(B2)))
+(p.val2 <- pchisq(teststat2, df = 12, lower.tail = FALSE))
+
+```
+
+
+```{r TD ~ MH}
+mod_mh_score <- lm(score ~ mh_calm + mh_energy + mh_sad + depression + confid_loss - 1, data_mediation)
+mod_mh_pres <- glm(presbias ~ mh_calm + mh_energy + mh_sad + depression + confid_loss - 1, data_mediation, family = binomial("logit"))
+mod_mh_absol <- glm(absolmag ~ mh_calm + mh_energy + mh_sad + depression + confid_loss - 1, data_mediation, family = binomial("logit"))
+mod_mh_gainloss <- glm(gainloss ~ mh_calm + mh_energy + mh_sad + depression + confid_loss - 1, data_mediation, family = binomial("logit"))
+mod_mh_delay <- glm(delayspeed ~ mh_calm + mh_energy + mh_sad + depression + confid_loss - 1, data_mediation, family = binomial("logit"))
+
+
+stargazer(mod_mh_score, 
+          mod_mh_pres, 
+          mod_mh_absol, 
+          #mod_mh_gainloss,  
+          #mod_mh_delay, 
+          header=FALSE,
+          type='text', 
+          digits=3,
+          font.size = "normalsize",
+          align = TRUE,
+          omit.stat=c("f", "ser"),
+          column.sep.width = "-25pt")
+```
+
+
+```{r}
 # Low R^2 and majority are insignificant
 
 
@@ -1819,48 +1787,7 @@ PROCESS(data = data_mediation,
 
 
 ```{r}
-mod_finance_score <- lm(score ~ inc_indiv + inc_house + fwb_expect + fwb_war + fwb_debts - 1, data_mediation)
-mod_finance_pres <- glm(presbias ~ inc_indiv + inc_house + fwb_expect + fwb_war + fwb_debts - 1, data_mediation, family = binomial("logit"))
-mod_finance_absol <- glm(absolmag ~ inc_indiv + inc_house + fwb_expect + fwb_war + fwb_debts - 1, data_mediation, family = binomial("logit"))
-mod_finance_gainloss <- glm(gainloss ~ inc_indiv + inc_house + fwb_expect + fwb_war + fwb_debts - 1, data_mediation, family = binomial("logit"))
-mod_finance_delay <- glm(delayspeed ~ inc_indiv + inc_house + fwb_expect + fwb_war + fwb_debts - 1, data_mediation, family = binomial("logit"))
 
-
-stargazer(mod_finance_score, 
-          mod_finance_pres, 
-          mod_finance_absol, 
-          #mod_finance_gainloss,  
-          #mod_finance_delay, 
-          header=FALSE,
-          type='text', 
-          digits=3,
-          font.size = "normalsize",
-          align = TRUE,
-          omit.stat=c("f", "ser"),
-          column.sep.width = "-25pt")
-```
-
-
-```{r}
-mod_mh_score <- lm(score ~ mh_calm + mh_energy + mh_sad + depression + confid_loss - 1, data_mediation)
-mod_mh_pres <- glm(presbias ~ mh_calm + mh_energy + mh_sad + depression + confid_loss - 1, data_mediation, family = binomial("logit"))
-mod_mh_absol <- glm(absolmag ~ mh_calm + mh_energy + mh_sad + depression + confid_loss - 1, data_mediation, family = binomial("logit"))
-mod_mh_gainloss <- glm(gainloss ~ mh_calm + mh_energy + mh_sad + depression + confid_loss - 1, data_mediation, family = binomial("logit"))
-mod_mh_delay <- glm(delayspeed ~ mh_calm + mh_energy + mh_sad + depression + confid_loss - 1, data_mediation, family = binomial("logit"))
-
-
-stargazer(mod_mh_score, 
-          mod_mh_pres, 
-          mod_mh_absol, 
-          #mod_mh_gainloss,  
-          #mod_mh_delay, 
-          header=FALSE,
-          type='text', 
-          digits=3,
-          font.size = "normalsize",
-          align = TRUE,
-          omit.stat=c("f", "ser"),
-          column.sep.width = "-25pt")
 ```
 
 
@@ -2139,7 +2066,6 @@ library(RColorBrewer)
 
 ## Ukraine regional map
 
-### Consumer index
 
 ```{r}
 #load the original file
@@ -2287,17 +2213,176 @@ rename_columns <- function(df, pattern, replacement) {
 new_attributes <- rename_columns(new_attributes, "\\-", "_")
 ```
 
-```{r}
-# will have to add consumer index for all 27 regions and add it to geojson
-
-
-map <- readOGR("~data/stanford-ukraine.json")
-
-map@data[["name_1"]] <- unique(new_attributes$oblast)
-map@data <- left_join(map@data, new_attributes, by = c("name_1" = "oblast"))
-
-
-#map@data <- cbind(map@data, newer_attributes)
+```{r map}
+# library(leaflet)
+# library(rgdal)
+# library(jsonlite)
+# library(stringr)   
+# library(sp)
+# library(sf)
+# 
+# map <- readOGR("data/stanford-ukraine.json")
+# 
+# map@data[["name_1"]] <- unique(data_clean$region_before_en)
+# map@data <- left_join(map@data, data_clean$geo, by = c("name_1" = "geo"))
+# 
+# 
+# #map@data <- cbind(map@data, newer_attributes)
 ```
 
+```{r}
+# Survey answers deciphered
 
+# oblast_before - Де Ви проживали до 24 лютого 2022 року?
+#...
+
+# geosoc6 - Що найкраще описує Ваші дії після початку повномасштабного вторгнення 24 лютого 2022 року?
+
+# 1 - Я залишився(лась) в своєму місті (те, в якому проживав до 24.02.2022) 
+# 2 - Я покинув(ла) своє місто (те, в якому проживав до 24.02.2022) і вже повернувся(лась) до цього міста назад
+# 3 - Я покинув(ла) своє місто (те, в якому проживав до 24.02.2022) і НЕ повернувся(лась) до цього міста назад
+
+
+# geosoc7 - Куди Ви переїждали після початку повномасштабного вторгнення (після 24 лютого 2022 року)? (якщо Ви переїжджали кілька разів, виберіть варіант, де Ви залишалися найдовше)
+# 1 - В межах моєї області
+# 2 - В іншу область України
+# 3 - За кордон
+
+
+# oblast_moving - До якої області Ви переїжджали після початку повномасштабного вторгнення (після 24 лютого 2022 року)?
+#...
+
+# geosoc9 - До якої країни Ви переїждали після початку повномасштабного вторгнення (після 24 лютого 2022 року?
+# 1 - Польша
+# 2 - Німеччина
+# 3 - Чехія
+# 4 - Інша
+
+# geosoc10 - Чи плануєте Ви повернутись в Україну?
+# 1 - Так, планую
+# 2  - Ні, не планую
+# 3 - Ще не визначився(лась)
+
+
+# q21 - Який Ваш індивідуальний середній місячний дохід у 2023 році (усі джерела)?
+# 1 - Менше 5 000 грн
+# 2 - 5 000 - 19 999 грн
+# 3 - 20 000 - 39 999 грн
+# 4 - 40 000 - 59 999 грн
+# 5 - 60 000 - 79 999 грн
+# 6 - Більше 80 000 грн
+# 7 - Не хочу відповідати
+
+# q21_1 - Який Ваш сімейний середній місячний дохід у 2023 році (усі джерела)?
+# 1 - Менше 5 000 грн
+# 2 - 5 000 - 19 999 грн
+# 3 - 20 000 - 39 999 грн
+# 4 - 40 000 - 59 999 грн
+# 5 - 60 000 - 79 999 грн
+# 6 - Більше 80 000 грн
+# 7 - Не хочу відповідати
+
+# q22 - Які Ваші очікування щодо власного фінансового становища на наступні 12 місяців? Я очікую що…
+# 1 - Буде набагато гірше, ніж зараз
+# 2 - Буде дещо гірше, ніж зараз
+# 3 - Буде приблизно так само
+# 4 - Буде дещо краще, ніж зараз
+# 5 - Буде набагато краще, ніж зараз
+ 
+# q23 - Загалом, враховуючи вплив повномаштабної війни, як змінилося Ваше фінансове становище протягом війни, порівняно з початком 2022 року?
+# 1 - Суттєво погіршилось
+# 2 - Дещо погіршилось
+# 3 - Ніяк не змінилось
+# 4 - Дещо покращилось
+# 5 - Суттєво покращилось
+
+# q24 - Чи є у Вас наразі будь-які фінансові зобов'язання (оплата по кредиту, аліменти, штрафи, іпотека, розстрочка, кредитний ліміт тощо), які Вам необхідно сплатити?
+# Так, є
+# Ні, немає
+
+# q25 - Яку частину Ваших місячних доходів Ви витрачаєте на виплату фінансових зобов'язань?
+# 1 - Меншу частину
+# 2 - Половину
+# 3 - Більшу частину
+
+# q26_1 - Скільки часу протягом останніх чотирьох тижнів Ви почувалися спокійним(ою)?
+# 1 - Весь час
+# 2 - Більшу частину часу
+# 3 - Досить часто
+# 4 - Іноді
+# 5 - Меншу частину часу
+# 6 - Зовсім не почувався(лась) спокійним(ою)
+ 
+# q26_2 - Скільки часу протягом останніх чотирьох тижнів Ви почувалися сповненими енергії?
+# 1 - Весь час
+# 2 - Більшу частину часу
+# 3 - Досить часто
+# 4 - Іноді
+# 5 - Меншу частину часу
+# 6 - Зовсім не почувався(лась) сповненим(ою) енергією
+ 
+# q26_3 - Скільки часу протягом останніх чотирьох тижнів Ви почувалися пригнічено?
+# 1 - Весь час
+# 2 - Більшу частину часу
+# 3 - Досить часто
+# 4 - Іноді
+# 5 - Меншу частину часу
+# 6 - Зовсім не почувався(лась) пригніченим(ою)
+
+#q27_intro - Наступні запитання стосуються Вашого досвіду повномасштабної війни. Вони можуть бути досить чутливими для деяких людей. Ваші відповіді дуже важливі для нас, і якщо Ви не хочете відповідати на них, то можете обрати "Не хочу відповідати"
+
+# q27 - Виберіть усе, з чим Ви стикалися з початку повномасштабної війни?
+
+# q27_1 - Евакуація
+# q27_2 - Життя на окупованій території
+# q27_3 - Стрілянина / бомбардування / ракетні атаки
+# q27_4 - Пошкодження власного майна внаслідок бойових дій
+# q27_5 - Фізичне насилля зі зброєю або без неї
+# q27_6 - Емоційне насилля (погроза фізичної розправи, приниження, залякування)
+# q27_7 - Пограбування, крадіжка або шахрайство
+# q27_8 - Служба близької людини у складі Сил оборони України (ЗСУ, Нацгвардія)
+# q27_9 - Втрата близької людини (родича, друга) внаслідок військової агресії росії
+# q27_10 - Не хочу відовідати
+
+# q28 - Чи страждали Ви від будь-якої з наведених нижче проблем, що виникли після початку війни в лютому 2022 року?
+
+# q28_1 - Тілесні ушкодження (поранення, переломи тощо)
+# q28_2 - Депресія, тривога або панічні атаки
+# q28_3 - Втрата впевненості в собі, відчуття вразливості
+# q28_4 - Труднощі зі сном та / або концентрацією
+# q28_5 - Жоден з вищеперелічених варіантів
+# q28_6 - Не хочу відповідати
+
+# q39 - На Вашу думку, як довго триватимуть активні бойові дії в Україні?
+# 1 - До кінця осені 2023
+# 2 - До зими 2023-2024
+# 3 - До кінця 2024 року
+# 4 - Активні бойові дії розтягнуться на роки
+# 5 - Інше
+# 6 - Важко відповісти
+
+# geosoc1 - Який Ваш сімейний статус?
+# 1 - Неодружений / незаміжня
+# 2 - Одружений / заміжня і проживаю РАЗОМ з чоловіком / дружиною
+# 3 - Одружений / заміжня і зараз проживаю з чоловіком / дружиною ОКРЕМО
+# 4 - Цивільний шлюб
+# 5 - Розлучений / розлучена
+# 6 - Вдівець / вдова
+# 7 - Не хочу відповідати
+
+# geosoc2 - Чи є у Вас діти?
+# 1 - Так, є тільки діти до 18 років
+# 2 - Так, є тільки повнолітні (старше 18 років) діти
+# 3 - Так, є як повнолітні, так і неповнолітні діти
+# 4 - Ні, але наразі очікуємо на появу
+# 5 - Ні, немає дітей
+
+# geosoc3 - Чи проживаєте Ви разом зі своїми неповнолітніми дітьми?
+# 1 - Проживаю разом з усіма своїми неповнолітніми дітьми
+# 2 - Проживаю разом з деякими своїми неповнолітніми дітьми, не з усіма
+# 3 - Не проживаю разом зі своїми неповнолітніми дітьми
+# 4 - Інше
+
+
+
+```
