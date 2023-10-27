@@ -15,27 +15,27 @@ editor: visual
 
 ```{r libraries, warning=FALSE, message=FALSE, echo=FALSE}
 # loading packages
-library(lattice)
-library(tidyverse)
-library(likert)
-library(MASS)
-library(psych)
-library(viridis)
-library(ggplot2)
-library(ggrepel)
-library(here)
-library(flextable)
-library(remotes)
-library(ggplot2)
-library(patchwork)
-library(gt)
-library(ggExtra)
-library(ggthemes)
-library(gtsummary)
-library(hrbrthemes)
-library(stargazer)
-library(fastDummies)
-library(haven)
+if (!require("lattice")) install.packages("lattice")
+if (!require("tidyverse")) install.packages("tidyverse")
+if (!require("broom")) install.packages("broom")
+if (!require("likert")) install.packages("likert")
+if (!require("MASS")) install.packages("MASS")
+if (!require("psych")) install.packages("psych")
+if (!require("viridis")) install.packages("viridis")
+if (!require("ggplot2")) install.packages("ggplot2")
+if (!require("ggrepel")) install.packages("ggrepel")
+if (!require("here")) install.packages("here")
+if (!require("flextable")) install.packages("flextable")
+if (!require("remotes")) install.packages("remotes")
+if (!require("patchwork")) install.packages("patchwork")
+if (!require("gt")) install.packages("gt")
+if (!require("ggExtra")) install.packages("ggExtra")
+if (!require("ggthemes")) install.packages("ggthemes")
+if (!require("gtsummary")) install.packages("gtsummary")
+if (!require("hrbrthemes")) install.packages("hrbrthemes")
+if (!require("stargazer")) install.packages("stargazer")
+if (!require("fastDummies")) install.packages("fastDummies")
+if (!require("haven")) install.packages("haven")
 
 ```
 
@@ -807,7 +807,7 @@ anomalies_congruent <- anomalies_data %>%
               . == "Congruent" ~ 1,
               TRUE ~ 0)))
 
-##  We calculate the temporal discount scores from responses to each block plus items Q17 to Q19 (anomalies)
+##  We calculate the temporal discount scores from responses to each block plus item Q17 (anomaly)
 ### Careful with reversed scores when estimating the scores
 
 scores <- get_scores(get_latest_answer(dat_items, 6))$score +
@@ -837,11 +837,11 @@ rm(q,scores, presbias, absolmag, gainloss, delayspeed)
 ```
 
 ```{r data prep}
-dt <- data_clean %>% 
+dat <- data_clean %>% 
   left_join(dat_unique, by = "ResponseId")
 
 
-dt <- dt %>%  
+dat <- dat %>%  
   mutate(across(everything(), convert_labelled_to_numeric)) %>% 
   mutate(score.c = c(scale(score))) 
 
@@ -852,22 +852,829 @@ dt <- dt %>%
 
 # Calculating temporal discounting score and anomalies
 
-# writexl::write_xlsx(dt, "survey.xlsx", col_names = TRUE)
+writexl::write_xlsx(dt, "survey.xlsx", col_names = TRUE)
 # writexl::write_xlsx(data_clean, "survey_1.xlsx", col_names = TRUE)
 ```
 
+
+
+## Analysis
+
+```{r LR test for ordinal variables}
+#treating ordinal data as continuous
+dt <- data_copy[, c(1, 31:34, 37:39)] %>% 
+  rename("monthly_inc" = "q21",
+         "monthly_house_inc" = "q21_1",
+         "fwb_expect" = "q22",
+         "fwb_war" = "q23",
+         "feel_calm" = "q26_1",
+         "feel_energy" = "q26_2",
+         "feel_sad" = "q26_3") %>% 
+  mutate(
+    fwb_expect = case_when(
+      fwb_expect == 1 ~ -2,
+      fwb_expect == 2 ~ -1,
+      fwb_expect == 3 ~ 0,
+      fwb_expect == 4 ~ 1,
+      fwb_expect == 5 ~ 2),
+    fwb_war = case_when(
+      fwb_war == 1 ~ -2,
+      fwb_war == 2 ~ -1,
+      fwb_war == 3 ~ 0,
+      fwb_war == 4 ~ 1,
+      fwb_war == 5 ~ 2),
+    feel_calm = case_when(
+      feel_calm == 1 ~ 0,
+      feel_calm == 2 ~ 1,
+      feel_calm == 3 ~ 2,
+      feel_calm == 4 ~ 3,
+      feel_calm == 5 ~ 4,
+      feel_calm == 6 ~ 5),
+    feel_energy = case_when(  
+      feel_energy == 1 ~ 0,
+      feel_energy == 2 ~ 1,
+      feel_energy == 3 ~ 2,
+      feel_energy == 4 ~ 3,
+      feel_energy == 5 ~ 4,
+      feel_energy == 6 ~ 5),
+    feel_sad = case_when(
+      feel_sad == 1 ~ 0,
+      feel_sad == 2 ~ 1,
+      feel_sad == 3 ~ 2,
+      feel_sad == 4 ~ 3,
+      feel_sad == 5 ~ 4,
+      feel_sad == 6 ~ 5)) %>% 
+  left_join(dat, by = "ResponseId")
+
+dt$intensity <- rowSums(dt[,c(11:18)])
+
+
+mod_ord_test1 <- lm(score.c ~ monthly_inc + monthly_house_inc + fwb_expect + fwb_war + debts, data = dt)
+mod_ord_test2 <- lm(score.c ~ 
+                      inc_5 + inc_20 + inc_40 + inc_60 + inc_80 + inc_100 + finc_5 + 
+                      finc_20 + finc_40 + finc_60 + finc_80 + finc_100 +
+                      expect_much_better + expect_better + expect_worse + expect_much_worse + 
+                      change_much_better + change_better + change_worse + change_much_worse + 
+                      debts, data = dt)
+mod_ord_test3 <- lm(score.c ~ monthly_inc + monthly_house_inc + debts + fwb_expect + fwb_war + 
+                      inc_5 + inc_20 + inc_40 + inc_60 + inc_80 + inc_100 + finc_5 + 
+                      finc_20 + finc_40 + finc_60 + finc_80 + finc_100 +
+                      expect_much_better + expect_better + expect_worse + expect_much_worse + 
+                      change_much_better + change_better + change_worse + change_much_worse + 
+                      debts, data = dt)
+
+stargazer(mod_ord_test1,
+          mod_ord_test2,
+          mod_ord_test3,          
+          header=FALSE,
+          type='text', 
+          digits=3,
+          font.size = "normalsize",
+          align = TRUE,
+          omit.stat=c("f", "ser"),
+          column.sep.width = "-25pt")
+
+(A <- logLik(mod_ord_test1))
+(B <- logLik(mod_ord_test2))
+(teststat <- -2 * (as.numeric(A)-as.numeric(B)))
+# df=23-7=16
+(p.val <- pchisq(teststat, df = 16, lower.tail = FALSE))
+
+
+mod_ord_test4 <- lm(score.c ~ feel_calm + feel_energy + feel_sad, data = dt)
+mod_ord_test5 <- lm(score.c ~ 
+                      calm_always + calm_more + calm_freq + calm_less + calm_never +
+                      energy_always + energy_more + energy_freq + energy_less + energy_never +
+                      sad_always + sad_more + sad_freq + sad_less + sad_never, data = dt)
+mod_ord_test6 <- lm(score.c ~ 
+                      feel_calm + feel_energy + feel_sad + 
+                      calm_always + calm_more + calm_freq + calm_less + calm_never +
+                      energy_always + energy_more + energy_freq + energy_often + energy_less + energy_never +
+                      sad_always + sad_more + sad_freq + sad_less + sad_never, data = dt)
+
+
+stargazer(mod_ord_test4,
+          mod_ord_test5,
+          mod_ord_test6,          
+          header=FALSE,
+          type='text', 
+          digits=3,
+          font.size = "normalsize",
+          align = TRUE,
+          omit.stat=c("f", "ser"),
+          column.sep.width = "-25pt")
+
+(A2 <- logLik(mod_ord_test4))
+(B2 <- logLik(mod_ord_test5))
+#df=17-5
+(teststat2 <- -2 * (as.numeric(A2)-as.numeric(B2)))
+(p.val2 <- pchisq(teststat2, df = 12, lower.tail = FALSE))
+
+```
+
+```{r}
+#####
+# library(doBy)
+# summaryBy(fwb_war ~ debts, data = dt,
+#   FUN = function(x) {
+# c(m = mean(x), s = sd(x))
+# } )
+####
+```
+
+# Mediation Analysis
+
+```{r}
+require(mediation) #Mediation package
+require(rockchalk) #Graphing simple slopes; moderation
+require(multilevel) #Sobel Test
+require(bda) #Another Sobel Test option
+require(gvlma) #Testing Model Assumptions 
+require(QuantPsyc)
+require(pequod)
+```
+
+
+
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
+data_mediation <- dt[, c(3:11,20:31,33:37,41,43,46,47,50,63:67,117)]
+# 
+#data_mediation <- data_mediation %>%  
+#   mutate(across(everything(), convert_labelled_to_numeric)) %>% 
+#   mutate(score.c = c(scale(score))) 
+# 
+# #Which mediators correlated with one another?
+# corr_med <- data_mediation %>% 
+#   select(fwb_war, fwb_expect, fwb_debts, mh_sad, mh_energy, mh_calm) %>% 
+#   cor()
+# 
+# corrplot(corr_med, method="number", type="upper")
+# corrplot::cor.mtest(corr_med, conf.level = 0.95)
+# p.mat
+```
+
+```{r cronbach alpha}
+
+```
+
+
+
+```{r TD ~ FULL}
+full_score <- lm(score.c ~ ., data = dt[,-c(1,28:36,39,48:90,105:111,112:116)])
+
+full_pres <- glm(presbias ~ ., data = dt[,-c(1,28:36,39,48:90,105:111,112,114:117)], family = binomial("logit"))
+
+full_absol <- glm(absolmag ~ ., data = dt[,-c(1,28:36,39,48:90,105:111,112,113,115:117)], family = binomial("logit"))
+
+full_gain <- glm(gainloss ~ ., data = dt[,-c(1,28:36,39,48:90,105:111,112:114,116,117)], family = binomial("logit"))
+
+full_delay <- glm(delayspeed ~ ., data = dt[,-c(1,28:36,39,48:90,105:111,112:115,117)], family = binomial("logit"))
+
+stargazer(full_score, full_pres, full_absol, full_gain, full_delay,
+          header=FALSE,
+          type='text', 
+          digits=3,
+          font.size = "normalsize",
+          align = TRUE,
+          omit.stat=c("f", "ser"),
+          column.sep.width = "-25pt")
+
+
+library(car)
+#create vector of VIF values
+vif_values <- vif(mod_score)
+
+#create horizontal bar chart to display each VIF value
+barplot(vif_values, main = "VIF Values", horiz = TRUE, col = "steelblue")
+
+#add vertical line at 5
+abline(v = 5, lwd = 3, lty = 2)
+```
+
+```{r TD ~ War}
+#Which aspect of war is highly associated with TD?
+mod_score <- lm(score.c ~ intensity + occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + no_effect + region_war + age + gender, data = dt)
+
+mod_pres <- glm(presbias ~ intensity + occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + no_effect + region_war +  age + gender, data = dt, family = binomial("logit"))
+
+mod_absol <- glm(absolmag ~ intensity + occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + no_effect + region_war + age + gender, data = dt, family = binomial("logit"))
+
+mod_gain <- glm(gainloss ~ intensity + occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + no_effect + region_war + age + gender, data = dt, family = binomial("logit"))
+
+mod_delay <- glm(delayspeed ~ intensity + occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + no_effect + region_war + age + gender, data = dt, family = binomial("logit"))
+
+stargazer(mod_score, mod_pres, mod_absol, mod_gain, mod_delay,
+          header=FALSE,
+          type='text', 
+          digits=3,
+          font.size = "normalsize",
+          align = TRUE,
+          omit.stat=c("f", "ser"),
+          column.sep.width = "-25pt")
+
+# Get tidy results with confidence intervals
+results_war <- tidy(mod_score, conf.int = TRUE) %>%
+  arrange(desc(estimate))
+
+# Add asterisks based on the significance level
+results_war$signif <- ifelse(results_war$p.value < 0.01, '***',
+                   ifelse(results_war$p.value < 0.05, '**',
+                   ifelse(results_war$p.value < 0.1, '*', '')))
+
+# Plot coefficients with ggplot2
+ggplot(results_war, aes(x = estimate, y = reorder(term, estimate))) +  
+  geom_point(aes(x = estimate), color = "black") +
+  geom_errorbarh(aes(xmin = conf.low, xmax = conf.high), height = 0.2, size = 0.7) +  # Increased thickness
+  geom_vline(xintercept = 0, linetype = "dashed", color = "red") +
+  
+  # Add p-values as text with significance asterisks
+  geom_text(aes(x = max(conf.high) + 0.05, 
+            label = paste0("p = ", sprintf("%.3f", p.value), signif)),
+            hjust = 0, vjust = 0) +
+  labs(
+    title = "",
+    x = "Estimate",
+    y = "Terms"
+  ) +
+  theme_minimal() +
+  coord_cartesian(xlim = c(-1, 1)) +  # Set x-axis limits from -1 to 1
+  
+  # Adjust theme
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    text = element_text(family = "Garamond", size = 14)
+  )
+```
+
+```{r TD ~ War|Kids}
+test_no_kids <- lm(score.c ~ evacuate + occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + no_effect + region_war + age + gender, subset(dt, no_kids == 1))
+
+test_kids <- lm(score.c ~ evacuate + occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + no_effect + region_war + age + gender, subset(dt, no_kids == 0))
+
+stargazer(test_no_kids, 
+          test_kids,
+          header=FALSE,
+          type='text', 
+          digits=3,
+          font.size = "normalsize",
+          align = TRUE,
+          omit.stat=c("f", "ser"),
+          column.sep.width = "-25pt")
+```
+
+```{r TD ~ War|Region}
+war_td <- lm(score.c ~ evacuate + occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + no_effect + age + gender, data = subset(dt, region_war == 1))
+
+no_war_td <- lm(score.c ~ evacuate + occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + no_effect +  age + gender, data = subset(dt, region_war == 0))
+
+stargazer(war_td, no_war_td,
+          header=FALSE,
+          type='text', 
+          digits=3,
+          font.size = "normalsize",
+          align = TRUE,
+          omit.stat=c("f", "ser"),
+          column.sep.width = "-25pt")
+```
+
+```{r TD ~ FWB}
+mod_fwb_score <- lm(score.c ~ monthly_inc + monthly_house_inc + fwb_expect + fwb_war + debts, dt)
+
+mod_fwb_pres <- glm(presbias ~ monthly_inc + monthly_house_inc + fwb_expect + fwb_war + debts, dt, family = binomial("logit"))
+
+mod_fwb_absl <- glm(absolmag ~ monthly_inc + monthly_house_inc + fwb_expect + fwb_war + debts, dt, family = binomial("logit"))
+
+mod_fwb_gl <- glm(gainloss ~ monthly_inc + monthly_house_inc + fwb_expect + fwb_war + debts, dt, family = binomial("logit"))
+
+mod_fwb_dl <- glm(delayspeed ~ monthly_inc + monthly_house_inc + fwb_expect + fwb_war + debts, dt, family = binomial("logit"))
+
+stargazer(mod_fwb_score, 
+          mod_fwb_pres, 
+          mod_fwb_absl, 
+          mod_fwb_gl,  
+          mod_fwb_dl, 
+          header=FALSE,
+          type='text', 
+          digits=3,
+          font.size = "normalsize",
+          align = TRUE,
+          omit.stat=c("f", "ser"),
+          column.sep.width = "-25pt")
+
+# Get tidy results with confidence intervals
+results_fwb <- tidy(mod_fwb_score, conf.int = TRUE) %>%
+  arrange(desc(estimate))
+
+# Add asterisks based on the significance level
+results_fwb$signif <- ifelse(results_fwb$p.value < 0.01, '***',
+                   ifelse(results_fwb$p.value < 0.05, '**',
+                   ifelse(results_fwb$p.value < 0.1, '*', '')))
+
+# Plot coefficients with ggplot2
+ggplot(results_fwb, aes(x = estimate, y = reorder(term, estimate))) +  
+  geom_point(aes(x = estimate), color = "black") +
+  geom_errorbarh(aes(xmin = conf.low, xmax = conf.high), height = 0.2, size = 0.7) +  # Increased thickness
+  geom_vline(xintercept = 0, linetype = "dashed", color = "red") +
+  
+  # Add p-values as text with significance asterisks
+  geom_text(aes(x = max(conf.high) + 0.05, 
+            label = paste0("p = ", sprintf("%.3f", p.value), signif)),
+            hjust = 0, vjust = 0) +
+  
+  labs(
+    title = "",
+    x = "Estimate",
+    y = "Terms"
+  ) +
+  theme_minimal() +
+  coord_cartesian(xlim = c(-1, 1)) +  # Set x-axis limits from -1 to 1
+  
+  # Adjust theme
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    text = element_text(family = "Garamond", size = 14)
+  )
+```
+
+
+```{r TD ~ FWB|Kids}
+fwb_no_kids <- lm(score.c ~ monthly_inc + monthly_house_inc + fwb_expect + fwb_war + debts, subset(dt, no_kids == 1))
+
+fwb_kids <- lm(score.c ~ monthly_inc + monthly_house_inc + fwb_expect + fwb_war + debts, subset(dt, no_kids == 0))
+
+stargazer(fwb_no_kids, 
+          fwb_kids,
+          header=FALSE,
+          type='text', 
+          digits=3,
+          font.size = "normalsize",
+          align = TRUE,
+          omit.stat=c("f", "ser"),
+          column.sep.width = "-25pt")
+```
+
+```{r TD ~ FWB|Debts}
+fwb_score_debts <- lm(score.c ~ monthly_inc + monthly_house_inc + fwb_expect + fwb_war, subset(dt, debts == 1))
+
+fwb_score_no_debts <- lm(score.c ~ monthly_inc + monthly_house_inc + fwb_expect + fwb_war, subset(dt, debts == 0))
+
+stargazer(fwb_score_debts, 
+          fwb_score_no_debts, 
+          header=FALSE,
+          type='text', 
+          digits=3,
+          font.size = "normalsize",
+          align = TRUE,
+          omit.stat=c("f", "ser"),
+          column.sep.width = "-25pt")
+```
+
+```{r TD ~ MH}
+mod_mh_td <- lm(score.c ~ feel_calm + feel_energy + feel_sad + depression + confid_loss, dt)
+
+mod_mh_pres <- glm(presbias ~ feel_calm + feel_energy + feel_sad + depression + confid_loss, dt, family = binomial("logit"))
+
+mod_mh_absol <- glm(absolmag ~ feel_calm + feel_energy + feel_sad + depression + confid_loss, dt, family = binomial("logit"))
+
+mod_mh_gl <- glm(gainloss ~ feel_calm + feel_energy + feel_sad + depression + confid_loss, dt, family = binomial("logit"))
+
+mod_mh_dl <- glm(delayspeed ~ feel_calm + feel_energy + feel_sad + depression + confid_loss, dt, family = binomial("logit"))
+
+stargazer(mod_mh_td, 
+          mod_mh_pres, 
+          mod_mh_absol, 
+          mod_mh_gl,  
+          mod_mh_dl, 
+          header=FALSE,
+          type='text', 
+          digits=3,
+          font.size = "normalsize",
+          align = TRUE,
+          omit.stat=c("f", "ser"),
+          column.sep.width = "-25pt")
+          
+# Get tidy results with confidence intervals
+results_mh <- tidy(mod_mh_td, conf.int = TRUE) %>%
+  arrange(desc(estimate))
+
+# Add asterisks based on the significance level
+results_mh$signif <- ifelse(results_mh$p.value < 0.01, '***',
+                   ifelse(results_mh$p.value < 0.05, '**',
+                   ifelse(results_mh$p.value < 0.1, '*', '')))
+
+# Plot coefficients with ggplot2
+ggplot(results_mh, aes(x = estimate, y = reorder(term, estimate))) +  
+  geom_point(aes(x = estimate), color = "black") +
+  geom_errorbarh(aes(xmin = conf.low, xmax = conf.high), height = 0.2, size = 0.7) +  # Increased thickness
+  geom_vline(xintercept = 0, linetype = "dashed", color = "red") +
+  
+  # Add p-values as text with significance asterisks
+  geom_text(aes(x = max(conf.high) + 0.05, 
+            label = paste0("p = ", sprintf("%.3f", p.value), signif)),
+            hjust = 0, vjust = 0) +
+  
+  labs(
+    title = "",
+    x = "Estimate",
+    y = "Terms"
+  ) +
+  theme_minimal() +
+  coord_cartesian(xlim = c(-1, 1)) +  # Set x-axis limits from -1 to 1
+  
+  # Adjust theme
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    text = element_text(family = "Garamond", size = 14)
+  )
+          
+```
+
+```{r TD ~ MH|Kids}
+mh_td_kids <- lm(score.c ~ feel_calm + feel_energy + feel_sad + depression + confid_loss, subset(dt, no_kids == 0))
+
+mh_td_no_kids <- lm(score.c ~ feel_calm + feel_energy + feel_sad + depression + confid_loss, subset(dt, no_kids == 1))
+
+stargazer(mh_td_kids, 
+          mh_td_no_kids,
+          header=FALSE,
+          type='text', 
+          digits=3,
+          font.size = "normalsize",
+          align = TRUE,
+          omit.stat=c("f", "ser"),
+          column.sep.width = "-25pt")
+```
+
+```{r TD ~ Kids}
+mod_kid_td <- lm(score.c ~ kids_under18 + kids_over18 + kids_under_over18 + kids_pregnant + no_kids + kids_together + kids_some_together + kids_not_together + kids_under18*kids_not_together, dt)
+
+mod_kid_pres <- glm(presbias ~ kids_under18 + kids_over18 + kids_under_over18 + kids_pregnant + no_kids + kids_together + kids_some_together + kids_not_together + kids_under18*kids_not_together, dt, family = binomial("logit"))
+
+mod_kid_absol <- glm(absolmag ~ kids_under18 + kids_over18 + kids_under_over18 + kids_pregnant + no_kids + kids_together + kids_some_together + kids_not_together + kids_under18*kids_not_together, dt, family = binomial("logit"))
+
+mod_kid_gl <- glm(gainloss ~ kids_under18 + kids_over18 + kids_under_over18 + kids_pregnant + no_kids + kids_together + kids_some_together + kids_not_together + kids_under18*kids_not_together, dt, family = binomial("logit"))
+
+mod_kid_dl <- glm(delayspeed ~ kids_under18 + kids_over18 + kids_under_over18 + kids_pregnant + no_kids + kids_together + kids_some_together + kids_not_together + kids_under18*kids_not_together, dt, family = binomial("logit"))
+
+stargazer(mod_kid_td, 
+          mod_kid_pres, 
+          mod_kid_absol, 
+          mod_kid_gl,  
+          mod_kid_dl, 
+          header=FALSE,
+          type='text', 
+          digits=3,
+          font.size = "normalsize",
+          align = TRUE,
+          omit.stat=c("f", "ser"),
+          column.sep.width = "-25pt")
+```
+
+
+
+```{r TD ~ MISC1}
+mod_m1_td <- lm(score.c ~ stayed_city + left_came_back + left_no_come_back + left_within_oblast + left_other_oblast + left_abroad, dt)
+
+mod_m1_pres <- glm(presbias ~ stayed_city + left_came_back + left_no_come_back + left_within_oblast + left_other_oblast + left_abroad, dt, family = binomial("logit"))
+
+mod_m1_absol <- glm(absolmag ~ stayed_city + left_came_back + left_no_come_back + left_within_oblast + left_other_oblast + left_abroad, dt, family = binomial("logit"))
+
+mod_m1_gl <- glm(gainloss ~ stayed_city + left_came_back + left_no_come_back + left_within_oblast + left_other_oblast + left_abroad, dt, family = binomial("logit"))
+
+mod_m1_dl <- glm(delayspeed ~ stayed_city + left_came_back + left_no_come_back + left_within_oblast + left_other_oblast + left_abroad, dt, family = binomial("logit"))
+
+stargazer(mod_m1_td, 
+          mod_m1_pres, 
+          mod_m1_absol, 
+          mod_m1_gl,  
+          mod_m1_dl, 
+          header=FALSE,
+          type='text', 
+          digits=3,
+          font.size = "normalsize",
+          align = TRUE,
+          omit.stat=c("f", "ser"),
+          column.sep.width = "-25pt")
+```
+
+```{r TD ~ Alone}
+alone_td <- lm(score.c ~ not_married + married_together + married_separate + civil_marriage + divorced + widow, dt)
+
+alone_pres <- glm(presbias ~ not_married + married_together + married_separate + civil_marriage + divorced + widow, dt, family = binomial("logit"))
+
+alone_absol <- glm(absolmag ~ not_married + married_together + married_separate + civil_marriage + divorced + widow, dt, family = binomial("logit"))
+
+####!!!!
+alone_gl <- glm(gainloss ~ not_married + married_together + married_separate + civil_marriage + divorced + widow, dt, family = binomial("logit"))
+####!!!!
+
+alone_dl <- glm(delayspeed ~ not_married + married_together + married_separate + civil_marriage + divorced + widow, dt, family = binomial("logit"))
+
+stargazer(alone_td, 
+          alone_pres, 
+          alone_absol, 
+          alone_gl,  
+          alone_dl, 
+          header=FALSE,
+          type='text', 
+          digits=3,
+          font.size = "normalsize",
+          align = TRUE,
+          omit.stat=c("f", "ser"),
+          column.sep.width = "-25pt")
+```
+
+```{r TD ~ Main source}
+income_td <- lm(score.c ~ stipend_main + pension_main + govpay_main + job_main + business_main + relatives_main + other_main, dt)
+
+income_pres <- glm(presbias ~ stipend_main + pension_main + govpay_main + job_main + business_main + relatives_main + other_main, dt, family = binomial("logit"))
+
+income_absol <- glm(absolmag ~ stipend_main + pension_main + govpay_main + job_main + business_main + relatives_main + other_main, dt, family = binomial("logit"))
+
+income_gl <- glm(gainloss ~ stipend_main + pension_main + govpay_main + job_main + business_main + relatives_main + other_main, dt, family = binomial("logit"))
+
+income_dl <- glm(delayspeed ~ stipend_main + pension_main + govpay_main + job_main + business_main + relatives_main + other_main, dt, family = binomial("logit"))
+
+stargazer(income_td, 
+          income_pres, 
+          income_absol, 
+          income_gl,  
+          income_dl, 
+          header=FALSE,
+          type='text', 
+          digits=3,
+          font.size = "normalsize",
+          align = TRUE,
+          omit.stat=c("f", "ser"),
+          column.sep.width = "-25pt")
+```
+
+```{r TD ~ Region}
+# code up untill this point
+```
+
+
+```{r}
+# Low R^2 and majority are insignificant
+
+
+#WAR-MH-TD
+
+#STEP 1
+#1. Direct Effect (War on TD)
+mod_war_td <- lm(score.c ~ evacuate, data = data_mediation)
+
+#2.1 Path A (War on MH)
+mod_war_mh <- lm(feel_sad ~ evacuate, data = data_mediation)
+
+#3.1 Path B (MH on TD, controlling for War)
+mod_mh_td <- lm(score.c ~ feel_sad, data = data_mediation)
+
+#4.1 Total
+mod_total_mh <- lm(score.c ~ feel_sad + evacuate, data = data_mediation)
+
+stargazer(mod_war_td, mod_war_mh, mod_mh_td,mod_total_mh,
+          header=FALSE,
+          type='text', 
+          digits=3,
+          font.size = "normalsize",
+          align = TRUE,
+          omit.stat=c("f", "ser"),
+          column.sep.width = "-25pt")
+
+#1.1 Direct
+mod_war_td <- lm(score ~ evacuate, data = data_mediation)
+
+#2.2 Path C (War on FWB)
+mod_war_fwb <- lm(fwb_war ~ evacuate, data = data_mediation)
+
+#3.2 Path D (FWB on TD, controlling for War)
+mod_fwb_td <- lm(score ~ fwb_war, data = data_mediation)
+
+#4.1 Total 
+mod_total_fwb <- lm(score ~ fwb_war + evacuate, data = data_mediation)
+
+stargazer(mod_war_td, mod_war_fwb, mod_fwb_td,mod_total_fwb,
+          header=FALSE,
+          type='text', 
+          digits=3,
+          font.size = "normalsize",
+          align = TRUE,
+          omit.stat=c("f", "ser"),
+          column.sep.width = "-25pt")
+
+
+#Path A
+sobel(data_mediation$War, data_mediation$MH, data_mediation$score)
+
+#Path B
+sobel(data_mediation$War, data_mediation$FWB, data_mediation$score)
+```
+
+
+```{r}
+data_med_copy <- data_mediation
+
+convert_labelled_to_numeric <- function(variable) {
+  if (inherits(variable, "haven_labelled")) {
+    return(as.numeric(as.character(variable)))
+  } else {
+    return(variable)
+  }
+}
+
+data_med_copy <- data_med_copy %>% mutate(across(everything(), convert_labelled_to_numeric))
+
+med_full_fit <- lm(score ~ evacuate +
+                     fwb_expect + 
+                     fwb_war +
+                     fwb_debts +
+                     mh_sad - 1, 
+                   data = data_med_copy)
+
+med_full_fwb_expect <- lm(fwb_expect ~ evacuate - 1, 
+                   data = data_med_copy)
+  
+med_full_fwb_war <- lm(fwb_war ~ evacuate - 1, 
+                   data = data_med_copy)
+
+
+med_full_fwb_debts <- lm(fwb_debts ~ evacuate - 1, 
+                   data = data_med_copy)
+  
+med_full_mh_sad <-  lm(mh_sad ~ evacuate - 1, 
+                   data = data_med_copy)
+  
+stargazer(med_full_fit, 
+          med_full_fwb_expect, 
+          med_full_fwb_war, 
+          med_full_fwb_debts,
+          #med_full_mh_sad,
+          header=FALSE,
+          type='text', 
+          digits=3,
+          font.size = "normalsize",
+          align = TRUE,
+          omit.stat=c("f", "ser"),
+          column.sep.width = "-25pt")
+
+
+```
+
+
+```{r}
+med_fit <- lm(fwb_war ~ evacuate - 1, data = data_med_copy)
+out_fit <- lm(score ~ fwb_war + evacuate - 1, data = data_med_copy)
+
+med_out <- mediate(med_fit, out_fit, 
+        treat = "evacuate",
+        mediator = "fwb_war",
+        robustSE = FALSE)
+
+
+summary(med_out)
+```
+
+```{r}
+library(bruceR)
+
+data_mediation <- bind_cols(data_mediation, dummies)
+
+PROCESS(data = data_mediation, 
+        y = "score.c", 
+        x = "evacuate", 
+        meds = c("fwb_war", "fwb_expect", "fwb_debts", "mh_sad"),
+        med.type = "parallel",
+        covs = c("age", "gender", "inc_indiv", "inc_house"),
+        nsim = 1000,
+        ci = "mcmc",
+        seed = 4321)
+
+PROCESS(data = data_mediation, 
+        y = "score.c", 
+        x = "bombing", 
+        meds = c("fwb_war", "fwb_expect", "fwb_debts", "mh_sad"),
+        med.type = "parallel",
+        covs = c("age", "gender", "inc_indiv", "inc_house"),
+        nsim = 1000,
+        ci = "mcmc",
+        seed = 4321)
+
+
+PROCESS(data = data_mediation, 
+        y = "score.c", 
+        x = "occupation", 
+        meds = c("fwb_war", "fwb_expect", "fwb_debts", "mh_sad"),
+        covs = c("age", "gender", "inc_indiv", "inc_house"),
+        nsim = 1000,
+        seed = 4321)
+
+PROCESS(data = data_mediation, 
+        y = "score.c", 
+        x = "prop_dmg", 
+        meds = c("fwb_war", "fwb_expect", "fwb_debts", "mh_sad"),
+        med.type = "parallel",
+        covs = c("age", "gender", "inc_indiv", "inc_house"),
+        nsim = 1000,
+        ci = "mcmc",
+        seed = 4321)
+
+
+PROCESS(data = data_mediation, 
+        y = "score.c", 
+        x = "emo_viol", 
+        meds = c("fwb_war", "fwb_expect", "fwb_debts", "mh_sad"),
+        med.type = "parallel",
+        covs = c("age", "gender", "inc_indiv", "inc_house"),
+        nsim = 1000,
+        ci = "mcmc",
+        seed = 4321)
+
+PROCESS(data = data_mediation, 
+        y = "score.c", 
+        x = "robbery", 
+        meds = c("fwb_war", "fwb_expect", "fwb_debts", "mh_sad"),
+        med.type = "parallel",
+        covs = c("age", "gender", "inc_indiv", "inc_house"),
+        nsim = 1000,
+        ci = "mcmc",
+        seed = 4321)
+
+PROCESS(data = data_mediation, 
+        y = "score.c", 
+        x = "fam_death", 
+        meds = c("fwb_war", "fwb_expect", "fwb_debts", "mh_sad"),
+        med.type = "parallel",
+        covs = c("age", "gender", "inc_indiv", "inc_house"),
+        nsim = 1000,
+        ci = "mcmc",
+        seed = 4321)
+
+PROCESS(data = data_mediation, 
+        y = "score.c", 
+        x = "fam_afu", 
+        meds = c("fwb_war", "fwb_expect", "fwb_debts", "mh_sad", "depression", "insom", "confid_loss"),
+        med.type = "parallel",
+        covs = c("age", "gender", "inc_indiv", "inc_house"),
+        nsim = 1000,
+        ci = "mcmc",
+        seed = 4321)
+```
+
+```{r}
+library(UpSetR)
+data_venn <- data_mediation[,c(9:22)]
+data_venn <- as.data.frame(data_venn)
+upset(data_venn, order.by = "freq", sets = c("evacuate", 
+                          "occupation", 
+                          "bombing",
+                          "prop_dmg", 
+                          "phys_viol", 
+                          "emo_viol", 
+                          "robbery", 
+                          "fam_afu", 
+                          "fam_death", 
+                          "phys_injury", 
+                          "depression", 
+                          "confid_loss",
+                          "insom",
+                          "no_effect"))
+```
 
 ## EDA
 
 ```{r Distribution of TD}
 ruggeri_2021 <- read.csv("data/ruggeri_2021.csv")
 
-ggplot(ruggeri_2021,aes(score)) +
-  geom_histogram(bins = 17)
+ruggeri_mean <- mean(ruggeri_2021$score)
+ruggeri_var <- var(ruggeri_2021$score)
 
-sum(dt$presbias) + sum(dt$absolmag) + sum(dt$gainloss) + sum(dt$delayspeed)
+my_mean <- mean(dt$score)
+my_var <- var(dt$score)
+
+# F-statistic
+F_stat <- my_var / ruggeri_var
+
+# Plotting
+ggplot() +
+  geom_density(data = ruggeri_2021, aes(score), fill = "blue", alpha = 0.4, bins = 17) +
+  geom_density(data = dt, aes(score), fill = "red", alpha = 0.4) +
+  geom_vline(aes(xintercept = ruggeri_mean), color = "blue", linetype = "dashed") +
+  geom_vline(aes(xintercept = my_mean), color = "red", linetype = "dashed") +
+  annotate("text", x = Inf, y = Inf, hjust = 1, vjust = 1,
+           label = paste("Ruggeri 2021 Mean:", round(ruggeri_mean, 2),
+                         "\nRuggeri 2021 Variance:", round(ruggeri_var, 2),
+                         "\nMy Mean:", round(my_mean, 2),
+                         "\nMy Variance:", round(my_var, 2),
+                         "\nF-stat:", round(F_stat, 2)),
+           size = 3) +
+  labs(title = "Comparison of Distributions",
+       x = "Score", y = "Density") +
+  theme_minimal()
 ```
-
 
 ```{r income plots, warning=FALSE, message=FALSE, echo=FALSE}
 # Calculate the number of "Don't want" responses for each question
@@ -1053,7 +1860,7 @@ ggplot(data_copy, aes(x = as.factor(demo_age_int))) +
 ########################
 
 
-ggplot(data_copy, aes(x = as.factor(education))) +
+ggplot(data_copy, aes(x = as.factor(q20))) +
   geom_bar() +
   labs(title = "",
        x = "",
@@ -1071,7 +1878,6 @@ ggplot(data_copy, aes(x = as.factor(education))) +
         axis.text.y = element_blank())
 
 ```
-
 
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
 ggplot(data_copy, aes(x = geosoc6)) +
@@ -1139,10 +1945,9 @@ ggplot(data_copy, aes(x = oblast_moving)) +
 
 ```
 
-
-
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
-plot_war <- dat_unique[,c(23:31,33:36)]
+plot_war <- dt %>% 
+  select(evacuate,occupation,bombing,prop_dmg,phys_viol,emo_viol,robbery , fam_afu ,fam_death, phys_injury, depression, confid_loss, insom ,no_effect)
 
 library(PerformanceAnalytics)
 chart.Correlation(plot_war, histogram=F)
@@ -1232,1055 +2037,6 @@ ggplot(plot_discount, aes(x = score)) +
 ```
 
 
-## Analysis
-
-```{r, warning=FALSE, message=FALSE, echo=FALSE}
-data_war <- dat_unique[,c(23:37,46, 63)]
-
-mod <- lm(score ~ ., data = data_war)
-mod_pres <- glm(presbias ~ ., data = dat_unique[,c(23:37, 64)], family = binomial("logit"))
-mod_absol <- glm(absolmag ~ ., data = dat_unique[,c(23:37, 65)], family = binomial("logit"))
-mod_gainloss <- glm(gainloss ~ ., data = dat_unique[,c(23:37, 66)], family = binomial("logit"))
-mod_delay <- glm(delayspeed ~ ., data = dat_unique[,c(23:37, 67)], family = binomial("logit"))
-
-stargazer(mod, mod_pres, mod_absol, mod_gainloss, mod_delay,
-          covariate.labels = c("Evacuation", 
-                               "Occupation", 
-                               "Bombing",
-                               "Property damage", 
-                               "Physical violence", 
-                               "Emotional violence", 
-                               "Robbery / Fraud", 
-                               "Relative in AFU", 
-                               "Loss of a relative", 
-                               "Doesn't want to answer",
-                               "Physical injury", 
-                               "Depression", 
-                               "Confidence loss",
-                               "Problems with sleep",
-                               "None of the above", 
-                               "Don't want to answer",
-                               "age",
-                               "gender",
-                               "ind_inc",
-                               "debts",
-                               "region_war"),
-          header=FALSE, 
-          title="Regression results", 
-          type='text', 
-          digits=3,
-          style = "aer",
-          font.size = "small",
-          align = TRUE,
-          omit = c("Constant"),
-          omit.stat=c("f", "ser"),
-          no.space=TRUE)
-
-mod_war_interact <- lm(score ~ q27_1*q28_1+q27_1*q28_2+q27_1*q28_3+q27_1*q28_4+q27_1*q28_5-1, data = data_war)
-
-stargazer(mod_war_interact, 
-          header=FALSE,
-          type='text', 
-          digits=3,
-          font.size = "normalsize",
-          align = TRUE,
-          omit.stat=c("f", "ser"),
-          column.sep.width = "-25pt")
-
-
-```
-
-```{r}
-library(gt)
-
-table_temp <- data_copy[,c(2:19, 40:49, 63)] %>%
-  pivot_longer(cols = q2:q18, names_to = "Question", values_to = "Response") %>% 
-  group_by(Question, demo_gender, Response) %>%
-  summarise(Count = n()) %>%
-  pivot_wider(names_from = demo_gender, values_from = Count, names_prefix = "Num_") %>%
-  mutate(Question = factor(Question, levels = unique(Question))) %>%
-  arrange(Question, Response)
-
-table_temp %>% 
-  gt(groupname_col = 'Question') %>% 
-  cols_label(
-    Num_1 = "Female",
-    Num_2 = "Male") %>%
-  
-  tab_spanner(
-    label = md("**Gender**"),
-    columns = c('Num_1','Num_2')) %>%
-  
-  tab_header(
-    title = 'Table N. Summary Statistics of Temporal Discounting Questions') 
-
-
-
-#####
-library(doBy)
-summaryBy(fwb_war ~ debts, data = dt,
-  FUN = function(x) {
-c(m = mean(x), s = sd(x))
-} )
-####
-```
-
-
-
-# Mediation Analysis
-
-```{r}
-require(mediation) #Mediation package
-require(rockchalk) #Graphing simple slopes; moderation
-require(multilevel) #Sobel Test
-require(bda) #Another Sobel Test option
-require(gvlma) #Testing Model Assumptions 
-require(QuantPsyc)
-require(pequod)
-```
-
-
-
-```{r, warning=FALSE, message=FALSE, echo=FALSE}
-data_mediation <- dat_unique[, c(14:18,20:31,33:37,41,43,46,47,50,63:67)]
-
-colnames(data_mediation) <- c("inc_indiv",
-                              "inc_house",
-                              "fwb_expect",
-                              "fwb_war",
-                              "fwb_debts",
-                              "mh_calm",
-                              "mh_energy",
-                              "mh_sad",
-                              "evacuate", 
-                              "occupation", 
-                              "bombing",
-                              "prop_dmg", 
-                              "phys_viol", 
-                              "emo_viol", 
-                              "robbery", 
-                              "fam_afu", 
-                              "fam_death", 
-                              "phys_injury", 
-                              "depression", 
-                              "confid_loss",
-                              "insom",
-                              "no_effect", 
-                              "family_stat",
-                              "child_live",
-                              "gender",
-                              "age",
-                              "oblast",
-                              "score",
-                              "presbias",
-                              "absolmag",
-                              "gainloss",
-                              "delayspeed")
-
-data_mediation <- data_mediation %>%  
-  mutate(across(everything(), convert_labelled_to_numeric)) %>% 
-  mutate(score.c = c(scale(score))) 
-
-#Which mediators correlated with one another?
-corr_med <- data_mediation %>% 
-  select(fwb_war, fwb_expect, fwb_debts, mh_sad, mh_energy, mh_calm) %>% 
-  cor()
-
-corrplot(corr_med, method="number", type="upper")
-corrplot::cor.mtest(corr_med, conf.level = 0.95)
-p.mat
-```
-
-```{r TD ~ FULL}
-full_score <- lm(score.c ~ ., data = dt[,-c(1,21:29,32,105)])
-
-full_pres <- glm(presbias ~ ., data = dt[,-c(1,21:29,32,105)], family = binomial("logit"))
-
-
-full_absol <- glm(absolmag ~ ., data = dt[,-c(1,21:29,32,105)], family = binomial("logit"))
-
-full_gain <- glm(gainloss ~ ., data = dt[,-c(1,21:29,32,105)], family = binomial("logit"))
-
-full_delay <- glm(delayspeed ~ ., data = dt[,-c(1,21:29,32,105)], family = binomial("logit"))
-
-stargazer(full_score, full_pres, full_absol, full_gain, full_delay,
-          header=FALSE,
-          type='text', 
-          digits=3,
-          font.size = "normalsize",
-          align = TRUE,
-          omit.stat=c("f", "ser"),
-          column.sep.width = "-25pt")
-```
-
-
-```{r TD ~ War}
-#Which aspect of war is highly associated with TD?
-mod_score <- lm(score.c ~ evacuate + occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + no_effect + region_war + age + gender, data = dt)
-
-mod_pres <- glm(presbias ~ evacuate + occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + no_effect + region_war +  age + gender, data = dt, family = binomial("logit"))
-
-
-mod_absol <- glm(absolmag ~ evacuate + occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + no_effect + region_war + age + gender, data = dt, family = binomial("logit"))
-
-mod_gain <- glm(gainloss ~ evacuate + occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + no_effect + region_war + age + gender, data = dt, family = binomial("logit"))
-
-mod_delay <- glm(delayspeed ~ evacuate + occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + no_effect + region_war + age + gender, data = dt, family = binomial("logit"))
-
-stargazer(mod_score, mod_pres, mod_absol, mod_gain, mod_delay,
-          header=FALSE,
-          type='text', 
-          digits=3,
-          font.size = "normalsize",
-          align = TRUE,
-          omit.stat=c("f", "ser"),
-          column.sep.width = "-25pt")
-```
-
-```{r TD ~ War|Kids}
-test_no_kids <- lm(score.c ~ evacuate + occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + no_effect + region_war + age + gender, subset(dt, no_kids == 1))
-
-test_kids <- lm(score.c ~ evacuate + occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + no_effect + region_war + age + gender, subset(dt, no_kids == 0))
-
-stargazer(test_no_kids, 
-          test_kids,
-          header=FALSE,
-          type='text', 
-          digits=3,
-          font.size = "normalsize",
-          align = TRUE,
-          omit.stat=c("f", "ser"),
-          column.sep.width = "-25pt")
-```
-
-```{r TD ~ War|Region}
-war_td <- lm(score.c ~ evacuate + occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + no_effect + age + gender, data = subset(dt, region_war == 1))
-
-no_war_td <- lm(score.c ~ evacuate + occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + no_effect +  age + gender, data = subset(dt, region_war == 0))
-
-stargazer(war_td, no_war_td,
-          header=FALSE,
-          type='text', 
-          digits=3,
-          font.size = "normalsize",
-          align = TRUE,
-          omit.stat=c("f", "ser"),
-          column.sep.width = "-25pt")
-```
-
-```{r TD ~ FWB}
-mod_fwb_score <- lm(score.c ~ monthly_inc + monthly_house_inc + fwb_expect + fwb_war + debts, dt)
-
-mod_fwb_pres <- glm(presbias ~ monthly_inc + monthly_house_inc + fwb_expect + fwb_war + debts, dt, family = binomial("logit"))
-
-mod_fwb_absl <- glm(absolmag ~ monthly_inc + monthly_house_inc + fwb_expect + fwb_war + debts, dt, family = binomial("logit"))
-
-mod_fwb_gl <- glm(gainloss ~ monthly_inc + monthly_house_inc + fwb_expect + fwb_war + debts, dt, family = binomial("logit"))
-
-mod_fwb_dl <- glm(delayspeed ~ monthly_inc + monthly_house_inc + fwb_expect + fwb_war + debts, dt, family = binomial("logit"))
-
-stargazer(mod_fwb_score, 
-          mod_fwb_pres, 
-          mod_fwb_absl, 
-          mod_fwb_gl,  
-          mod_fwb_dl, 
-          header=FALSE,
-          type='text', 
-          digits=3,
-          font.size = "normalsize",
-          align = TRUE,
-          omit.stat=c("f", "ser"),
-          column.sep.width = "-25pt")
-```
-
-```{r TD ~ FWB|Kids}
-fwb_no_kids <- lm(score.c ~ monthly_inc + monthly_house_inc + fwb_expect + fwb_war + debts, subset(dt, no_kids == 1))
-
-fwb_kids <- lm(score.c ~ monthly_inc + monthly_house_inc + fwb_expect + fwb_war + debts, subset(dt, no_kids == 0))
-
-stargazer(fwb_no_kids, 
-          fwb_kids,
-          header=FALSE,
-          type='text', 
-          digits=3,
-          font.size = "normalsize",
-          align = TRUE,
-          omit.stat=c("f", "ser"),
-          column.sep.width = "-25pt")
-```
-
-```{r TD ~ FWB|Debts}
-fwb_score_debts <- lm(score.c ~ monthly_inc + monthly_house_inc + fwb_expect + fwb_war, subset(dt, debts == 1))
-
-fwb_score_no_debts <- lm(score.c ~ monthly_inc + monthly_house_inc + fwb_expect + fwb_war, subset(dt, debts == 0))
-
-stargazer(fwb_score_debts, 
-          fwb_score_no_debts, 
-          header=FALSE,
-          type='text', 
-          digits=3,
-          font.size = "normalsize",
-          align = TRUE,
-          omit.stat=c("f", "ser"),
-          column.sep.width = "-25pt")
-```
-
-```{r TD ~ MH}
-mod_mh_td <- lm(score.c ~ feel_calm + feel_energy + feel_sad + depression + confid_loss, dt)
-
-mod_mh_pres <- glm(presbias ~ feel_calm + feel_energy + feel_sad + depression + confid_loss, dt, family = binomial("logit"))
-
-mod_mh_absol <- glm(absolmag ~ feel_calm + feel_energy + feel_sad + depression + confid_loss, dt, family = binomial("logit"))
-
-mod_mh_gl <- glm(gainloss ~ feel_calm + feel_energy + feel_sad + depression + confid_loss, dt, family = binomial("logit"))
-
-mod_mh_dl <- glm(delayspeed ~ feel_calm + feel_energy + feel_sad + depression + confid_loss, dt, family = binomial("logit"))
-
-stargazer(mod_mh_td, 
-          mod_mh_pres, 
-          mod_mh_absol, 
-          mod_mh_gl,  
-          mod_mh_dl, 
-          header=FALSE,
-          type='text', 
-          digits=3,
-          font.size = "normalsize",
-          align = TRUE,
-          omit.stat=c("f", "ser"),
-          column.sep.width = "-25pt")
-```
-
-```{r TD ~ MH|Kids}
-mh_td_kids <- lm(score.c ~ feel_calm + feel_energy + feel_sad + depression + confid_loss, subset(dt, no_kids == 0))
-
-mh_td_no_kids <- lm(score.c ~ feel_calm + feel_energy + feel_sad + depression + confid_loss, subset(dt, no_kids == 1))
-
-stargazer(mh_td_kids, 
-          mh_td_no_kids,
-          header=FALSE,
-          type='text', 
-          digits=3,
-          font.size = "normalsize",
-          align = TRUE,
-          omit.stat=c("f", "ser"),
-          column.sep.width = "-25pt")
-```
-
-```{r TD ~ Kids}
-mod_kid_td <- lm(score.c ~ kids_under18 + kids_over18 + kids_under_over18 + kids_pregnant + no_kids + kids_together + kids_some_together + kids_not_together + kids_under18*kids_not_together, dt)
-
-mod_kid_pres <- glm(presbias ~ kids_under18 + kids_over18 + kids_under_over18 + kids_pregnant + no_kids + kids_together + kids_some_together + kids_not_together + kids_under18*kids_not_together, dt, family = binomial("logit"))
-
-mod_kid_absol <- glm(absolmag ~ kids_under18 + kids_over18 + kids_under_over18 + kids_pregnant + no_kids + kids_together + kids_some_together + kids_not_together + kids_under18*kids_not_together, dt, family = binomial("logit"))
-
-mod_kid_gl <- glm(gainloss ~ kids_under18 + kids_over18 + kids_under_over18 + kids_pregnant + no_kids + kids_together + kids_some_together + kids_not_together + kids_under18*kids_not_together, dt, family = binomial("logit"))
-
-mod_kid_dl <- glm(delayspeed ~ kids_under18 + kids_over18 + kids_under_over18 + kids_pregnant + no_kids + kids_together + kids_some_together + kids_not_together + kids_under18*kids_not_together, dt, family = binomial("logit"))
-
-stargazer(mod_kid_td, 
-          mod_kid_pres, 
-          mod_kid_absol, 
-          mod_kid_gl,  
-          mod_kid_dl, 
-          header=FALSE,
-          type='text', 
-          digits=3,
-          font.size = "normalsize",
-          align = TRUE,
-          omit.stat=c("f", "ser"),
-          column.sep.width = "-25pt")
-```
-
-```{r LR test for ordinal variables}
-#treating ordinal data as continuous
-dt <- data_copy[, c(1, 31:34, 37:39)] %>% 
-  rename("monthly_inc" = "q21",
-         "monthly_house_inc" = "q21_1",
-         "fwb_expect" = "q22",
-         "fwb_war" = "q23",
-         "feel_calm" = "q26_1",
-         "feel_energy" = "q26_2",
-         "feel_sad" = "q26_3") %>% 
-  mutate(
-    fwb_expect = case_when(
-      fwb_expect == 1 ~ -2,
-      fwb_expect == 2 ~ -1,
-      fwb_expect == 3 ~ 0,
-      fwb_expect == 4 ~ 1,
-      fwb_expect == 5 ~ 2),
-    fwb_war = case_when(
-      fwb_war == 1 ~ -2,
-      fwb_war == 2 ~ -1,
-      fwb_war == 3 ~ 0,
-      fwb_war == 4 ~ 1,
-      fwb_war == 5 ~ 2),
-    feel_calm = case_when(
-      feel_calm == 1 ~ 0,
-      feel_calm == 2 ~ 1,
-      feel_calm == 3 ~ 2,
-      feel_calm == 4 ~ 3,
-      feel_calm == 5 ~ 4,
-      feel_calm == 6 ~ 5),
-    feel_energy = case_when(  
-      feel_energy == 1 ~ 0,
-      feel_energy == 2 ~ 1,
-      feel_energy == 3 ~ 2,
-      feel_energy == 4 ~ 3,
-      feel_energy == 5 ~ 4,
-      feel_energy == 6 ~ 5),
-    feel_sad = case_when(
-      feel_sad == 1 ~ 0,
-      feel_sad == 2 ~ 1,
-      feel_sad == 3 ~ 2,
-      feel_sad == 4 ~ 3,
-      feel_sad == 5 ~ 4,
-      feel_sad == 6 ~ 5)) %>% 
-  left_join(dt, by = "ResponseId")
-
-mod_ord_test1 <- lm(score.c ~ monthly_inc + monthly_house_inc + fwb_expect + fwb_war + debts, data = dt)
-mod_ord_test2 <- lm(score.c ~ 
-                      inc_5 + inc_20 + inc_40 + inc_60 + inc_80 + inc_100 + finc_5 + 
-                      finc_20 + finc_40 + finc_60 + finc_80 + finc_100 +
-                      expect_much_better + expect_better + expect_worse + expect_much_worse + 
-                      change_much_better + change_better + change_worse + change_much_worse + 
-                      debts, data = dt)
-mod_ord_test3 <- lm(score.c ~ monthly_inc + monthly_house_inc + debts + fwb_expect + fwb_war + 
-                      inc_5 + inc_20 + inc_40 + inc_60 + inc_80 + inc_100 + finc_5 + 
-                      finc_20 + finc_40 + finc_60 + finc_80 + finc_100 +
-                      expect_much_better + expect_better + expect_worse + expect_much_worse + 
-                      change_much_better + change_better + change_worse + change_much_worse + 
-                      debts, data = dt)
-
-stargazer(mod_ord_test1,
-          mod_ord_test2,
-          mod_ord_test3,          
-          header=FALSE,
-          type='text', 
-          digits=3,
-          font.size = "normalsize",
-          align = TRUE,
-          omit.stat=c("f", "ser"),
-          column.sep.width = "-25pt")
-
-(A <- logLik(mod_ord_test1))
-(B <- logLik(mod_ord_test2))
-(teststat <- -2 * (as.numeric(A)-as.numeric(B)))
-# df=23-7=16
-(p.val <- pchisq(teststat, df = 16, lower.tail = FALSE))
-
-
-#######################################
-mod_ord_test1 <- lm(score ~ q21_1, data = dt)
-mod_ord_test2 <- lm(score ~ finc_5 + finc_20 + finc_40 + finc_60 + finc_80 + finc_100, data = dt)
-mod_ord_test3 <- lm(score ~ q21_1 + finc_5 + finc_20 + finc_40 + finc_60 + finc_80 + finc_100, data = dt)
-
-(A <- logLik(mod_ord_test1))
-(B <- logLik(mod_ord_test2))
-(teststat <- -2 * (as.numeric(A)-as.numeric(B)))
-(p.val <- pchisq(teststat, df = 5, lower.tail = FALSE))
-# only here more complex model is preferred - use dummies(!)
-#############################################
-
-
-mod_ord_test4 <- lm(score.c ~ feel_calm + feel_energy + feel_sad, data = dt)
-mod_ord_test5 <- lm(score.c ~ 
-                      calm_always + calm_more + calm_freq + calm_less + calm_never +
-                      energy_always + energy_more + energy_freq + energy_less + energy_never +
-                      sad_always + sad_more + sad_freq + sad_less + sad_never, data = dt)
-mod_ord_test6 <- lm(score.c ~ 
-                      feel_calm + feel_energy + feel_sad + 
-                      calm_always + calm_more + calm_freq + calm_less + calm_never +
-                      energy_always + energy_more + energy_freq + energy_often + energy_less + energy_never +
-                      sad_always + sad_more + sad_freq + sad_less + sad_never, data = dt)
-
-
-stargazer(mod_ord_test4,
-          mod_ord_test5,
-          mod_ord_test6,          
-          header=FALSE,
-          type='text', 
-          digits=3,
-          font.size = "normalsize",
-          align = TRUE,
-          omit.stat=c("f", "ser"),
-          column.sep.width = "-25pt")
-
-(A2 <- logLik(mod_ord_test4))
-(B2 <- logLik(mod_ord_test5))
-#df=17-5
-(teststat2 <- -2 * (as.numeric(A2)-as.numeric(B2)))
-(p.val2 <- pchisq(teststat2, df = 12, lower.tail = FALSE))
-
-```
-
-```{r TD ~ MISC1}
-mod_m1_td <- lm(score.c ~ stayed_city + left_came_back + left_no_come_back + left_within_oblast + left_other_oblast + left_abroad, dt)
-
-mod_m1_pres <- glm(presbias ~ stayed_city + left_came_back + left_no_come_back + left_within_oblast + left_other_oblast + left_abroad, dt, family = binomial("logit"))
-
-mod_m1_absol <- glm(absolmag ~ stayed_city + left_came_back + left_no_come_back + left_within_oblast + left_other_oblast + left_abroad, dt, family = binomial("logit"))
-
-mod_m1_gl <- glm(gainloss ~ stayed_city + left_came_back + left_no_come_back + left_within_oblast + left_other_oblast + left_abroad, dt, family = binomial("logit"))
-
-mod_m1_dl <- glm(delayspeed ~ stayed_city + left_came_back + left_no_come_back + left_within_oblast + left_other_oblast + left_abroad, dt, family = binomial("logit"))
-
-stargazer(mod_m1_td, 
-          mod_m1_pres, 
-          mod_m1_absol, 
-          mod_m1_gl,  
-          mod_m1_dl, 
-          header=FALSE,
-          type='text', 
-          digits=3,
-          font.size = "normalsize",
-          align = TRUE,
-          omit.stat=c("f", "ser"),
-          column.sep.width = "-25pt")
-```
-
-```{r TD ~ Alone}
-alone_td <- lm(score.c ~ not_married + married_together + married_separate + civil_marriage + divorced + widow, dt)
-
-alone_pres <- glm(presbias ~ not_married + married_together + married_separate + civil_marriage + divorced + widow, dt, family = binomial("logit"))
-
-alone_absol <- glm(absolmag ~ not_married + married_together + married_separate + civil_marriage + divorced + widow, dt, family = binomial("logit"))
-
-####!!!!
-alone_gl <- glm(gainloss ~ not_married + married_together + married_separate + civil_marriage + divorced + widow, dt, family = binomial("logit"))
-####!!!!
-
-alone_dl <- glm(delayspeed ~ not_married + married_together + married_separate + civil_marriage + divorced + widow, dt, family = binomial("logit"))
-
-stargazer(alone_td, 
-          alone_pres, 
-          alone_absol, 
-          alone_gl,  
-          alone_dl, 
-          header=FALSE,
-          type='text', 
-          digits=3,
-          font.size = "normalsize",
-          align = TRUE,
-          omit.stat=c("f", "ser"),
-          column.sep.width = "-25pt")
-```
-
-```{r TD ~ Main source}
-income_td <- lm(score.c ~ stipend_main + pension_main + govpay_main + job_main + business_main + relatives_main + other_main, dt)
-
-income_pres <- glm(presbias ~ stipend_main + pension_main + govpay_main + job_main + business_main + relatives_main + other_main, dt, family = binomial("logit"))
-
-income_absol <- glm(absolmag ~ stipend_main + pension_main + govpay_main + job_main + business_main + relatives_main + other_main, dt, family = binomial("logit"))
-
-income_gl <- glm(gainloss ~ stipend_main + pension_main + govpay_main + job_main + business_main + relatives_main + other_main, dt, family = binomial("logit"))
-
-income_dl <- glm(delayspeed ~ stipend_main + pension_main + govpay_main + job_main + business_main + relatives_main + other_main, dt, family = binomial("logit"))
-
-stargazer(income_td, 
-          income_pres, 
-          income_absol, 
-          income_gl,  
-          income_dl, 
-          header=FALSE,
-          type='text', 
-          digits=3,
-          font.size = "normalsize",
-          align = TRUE,
-          omit.stat=c("f", "ser"),
-          column.sep.width = "-25pt")
-```
-
-```{r TD ~ Region}
-
-```
-
-
-```{r}
-# Low R^2 and majority are insignificant
-
-
-#WAR-MH-TD
-
-#STEP 1
-#1. Direct Effect (War on TD)
-mod_war_td <- lm(score ~ evacuate - 1, data = data_mediation)
-
-#2.1 Path A (War on MH)
-mod_war_mh <- lm(mh_sad ~ evacuate - 1, data = data_mediation)
-
-#3.1 Path B (MH on TD, controlling for War)
-mod_mh_td <- lm(score ~ mh_sad - 1, data = data_mediation)
-
-#4.1 Total
-mod_total_mh <- lm(score ~ mh_sad + evacuate - 1, data = data_mediation)
-
-stargazer(mod_war_td, mod_war_mh, mod_mh_td,mod_total_mh,
-          header=FALSE,
-          type='text', 
-          digits=3,
-          font.size = "normalsize",
-          align = TRUE,
-          omit.stat=c("f", "ser"),
-          column.sep.width = "-25pt")
-
-#1.1 Direct
-mod_war_td <- lm(score ~ evacuate - 1, data = data_mediation)
-
-#2.2 Path C (War on FWB)
-mod_war_fwb <- lm(fwb_war ~ evacuate - 1, data = data_mediation)
-
-#3.2 Path D (FWB on TD, controlling for War)
-mod_fwb_td <- lm(score ~ fwb_war - 1, data = data_mediation)
-
-#4.1 Total 
-mod_total_fwb <- lm(score ~ fwb_war + evacuate - 1, data = data_mediation)
-
-stargazer(mod_war_td, mod_war_fwb, mod_fwb_td,mod_total_fwb,
-          header=FALSE,
-          type='text', 
-          digits=3,
-          font.size = "normalsize",
-          align = TRUE,
-          omit.stat=c("f", "ser"),
-          column.sep.width = "-25pt")
-
-
-#Path A
-sobel(data_mediation$War, data_mediation$MH, data_mediation$score)
-
-#Path B
-sobel(data_mediation$War, data_mediation$FWB, data_mediation$score)
-```
-
-
-```{r}
-data_med_copy <- data_mediation
-
-convert_labelled_to_numeric <- function(variable) {
-  if (inherits(variable, "haven_labelled")) {
-    return(as.numeric(as.character(variable)))
-  } else {
-    return(variable)
-  }
-}
-
-data_med_copy <- data_med_copy %>% mutate(across(everything(), convert_labelled_to_numeric))
-
-med_full_fit <- lm(score ~ evacuate +
-                     fwb_expect + 
-                     fwb_war +
-                     fwb_debts +
-                     mh_sad - 1, 
-                   data = data_med_copy)
-
-med_full_fwb_expect <- lm(fwb_expect ~ evacuate - 1, 
-                   data = data_med_copy)
-  
-med_full_fwb_war <- lm(fwb_war ~ evacuate - 1, 
-                   data = data_med_copy)
-
-
-med_full_fwb_debts <- lm(fwb_debts ~ evacuate - 1, 
-                   data = data_med_copy)
-  
-med_full_mh_sad <-  lm(mh_sad ~ evacuate - 1, 
-                   data = data_med_copy)
-  
-stargazer(med_full_fit, 
-          med_full_fwb_expect, 
-          med_full_fwb_war, 
-          med_full_fwb_debts,
-          #med_full_mh_sad,
-          header=FALSE,
-          type='text', 
-          digits=3,
-          font.size = "normalsize",
-          align = TRUE,
-          omit.stat=c("f", "ser"),
-          column.sep.width = "-25pt")
-
-
-```
-
-
-```{r}
-med_fit <- lm(fwb_war ~ evacuate - 1, data = data_med_copy)
-out_fit <- lm(score ~ fwb_war + evacuate - 1, data = data_med_copy)
-
-med_out <- mediate(med_fit, out_fit, 
-        treat = "evacuate",
-        mediator = "fwb_war",
-        robustSE = FALSE)
-
-
-summary(med_out)
-```
-
-```{r}
-install.packages("bruceR")
-library(bruceR)
-
-data_mediation <- bind_cols(data_mediation, dummies)
-
-PROCESS(data = data_mediation, 
-        y = "score.c", 
-        x = "evacuate", 
-        meds = c("fwb_war", "fwb_expect", "fwb_debts", "mh_sad"),
-        med.type = "parallel",
-        covs = c("age", "gender", "inc_indiv", "inc_house"),
-        nsim = 1000,
-        ci = "mcmc",
-        seed = 4321)
-
-PROCESS(data = data_mediation, 
-        y = "score.c", 
-        x = "bombing", 
-        meds = c("fwb_war", "fwb_expect", "fwb_debts", "mh_sad"),
-        med.type = "parallel",
-        covs = c("age", "gender", "inc_indiv", "inc_house"),
-        nsim = 1000,
-        ci = "mcmc",
-        seed = 4321)
-
-
-PROCESS(data = data_mediation, 
-        y = "score.c", 
-        x = "occupation", 
-        meds = c("fwb_war", "fwb_expect", "fwb_debts", "mh_sad"),
-        covs = c("age", "gender", "inc_indiv", "inc_house"),
-        nsim = 1000,
-        seed = 4321)
-
-PROCESS(data = data_mediation, 
-        y = "score.c", 
-        x = "prop_dmg", 
-        meds = c("fwb_war", "fwb_expect", "fwb_debts", "mh_sad"),
-        med.type = "parallel",
-        covs = c("age", "gender", "inc_indiv", "inc_house"),
-        nsim = 1000,
-        ci = "mcmc",
-        seed = 4321)
-
-
-PROCESS(data = data_mediation, 
-        y = "score.c", 
-        x = "emo_viol", 
-        meds = c("fwb_war", "fwb_expect", "fwb_debts", "mh_sad"),
-        med.type = "parallel",
-        covs = c("age", "gender", "inc_indiv", "inc_house"),
-        nsim = 1000,
-        ci = "mcmc",
-        seed = 4321)
-
-PROCESS(data = data_mediation, 
-        y = "score.c", 
-        x = "robbery", 
-        meds = c("fwb_war", "fwb_expect", "fwb_debts", "mh_sad"),
-        med.type = "parallel",
-        covs = c("age", "gender", "inc_indiv", "inc_house"),
-        nsim = 1000,
-        ci = "mcmc",
-        seed = 4321)
-
-PROCESS(data = data_mediation, 
-        y = "score.c", 
-        x = "fam_death", 
-        meds = c("fwb_war", "fwb_expect", "fwb_debts", "mh_sad"),
-        med.type = "parallel",
-        covs = c("age", "gender", "inc_indiv", "inc_house"),
-        nsim = 1000,
-        ci = "mcmc",
-        seed = 4321)
-
-PROCESS(data = data_mediation, 
-        y = "score.c", 
-        x = "fam_afu", 
-        meds = c("fwb_war", "fwb_expect", "fwb_debts", "mh_sad", "depression", "insom", "confid_loss"),
-        med.type = "parallel",
-        covs = c("age", "gender", "inc_indiv", "inc_house"),
-        nsim = 1000,
-        ci = "mcmc",
-        seed = 4321)
-```
-
-
-```{r}
-
-```
-
-
-```{r}
-library(UpSetR)
-data_venn <- data_mediation[,c(9:22)]
-data_venn <- as.data.frame(data_venn)
-upset(data_venn, order.by = "freq", sets = c("evacuate", 
-                          "occupation", 
-                          "bombing",
-                          "prop_dmg", 
-                          "phys_viol", 
-                          "emo_viol", 
-                          "robbery", 
-                          "fam_afu", 
-                          "fam_death", 
-                          "phys_injury", 
-                          "depression", 
-                          "confid_loss",
-                          "insom",
-                          "no_effect"))
-```
-
-
-```{r, warning=FALSE, message=FALSE, echo=FALSE}
-data_emp <- data_full_cat %>% 
-  filter(Employment == 1) 
-
-data_unemp <- data_full_cat %>% 
-  filter(Employment == 0) 
-
-mod_emp <- lm(score ~ ., data_emp)
-mod_unemp <- lm(score ~ ., data_unemp)
-stargazer(mod_unemp, mod_emp, 
-          header=FALSE, 
-          title="unemployed vs empployed", 
-          type='text', 
-          digits=2,
-          font.size = "small",
-          align = TRUE,
-          omit.stat=c("f", "ser"),
-          column.sep.width = "-25pt")
-```
-
-Відфільтрував датасет (no NAs) по тим гендеру.
-Для жінок Debts є сігніфікант на 0.10, що є дуже сумно.
-Але це вже щось!
-
-```{r, warning=FALSE, message=FALSE, echo=FALSE}
-data_male <- data_full_cat %>% 
-  filter(Gender == 0) 
-
-data_female <- data_full_cat %>% 
-  filter(Gender == 1) 
-
-mod_f <- lm(score ~ ., data_female)
-mod_m <- lm(score ~ ., data_male)
-stargazer(mod_f, mod_m, 
-          header=FALSE, 
-          title="female vs male", 
-          type='text', 
-          digits=2,
-          font.size = "small",
-          align = TRUE,
-          omit.stat=c("f", "ser"),
-          no.space=TRUE)
-```
-
-Відфільтрував датасет (no NAs) по тим хто ніколи не бере кредити.
-
-```{r, warning=FALSE, message=FALSE, echo=FALSE}
-data_debts <- data_full_cat %>% 
-  filter(Debts == 1) 
-
-data_no_debts <- data_full_cat %>% 
-  filter(Gender == 0) 
-
-mod_debts <- lm(score ~ ., data_debts)
-mod_no_debts <- lm(score ~ ., data_no_debts)
-stargazer(mod_debts, mod_no_debts, 
-          header=FALSE, 
-          title="No debts vs debts", 
-          type='text', 
-          digits=2,
-          font.size = "small",
-          align = TRUE,
-          omit.stat=c("f", "ser"),
-          column.sep.width = "-25pt")
-```
-
-Немає сильного зв\*язку між змінними, як не кручу.
-
-```{r, warning=FALSE, message=FALSE, echo=FALSE}
-library(PerformanceAnalytics)
-chart.Correlation(data_full_cat[,c(1:3,5:12)], histogram=F)
-
-library(corrr)
-library(corrplot)
-
-
-correlation.matrix<-cor(data_full_cat[,c(1:3,5:12)]) 
-
-stargazer(correlation.matrix,title="Correlation Matrix")
-```
-
-```{r}
-stargazer(mod, mod_f, mod_m, mod_emp, mod_unemp, mod_poor, mod_rich,
-          column.labels = c("Full model", "Female", "Male", "employed", "unemployed", "<20k UAH", "20+k UAH"),
-          covariate.labels = c("Income", "Debts", "Year of birth", "Gender", "Employment", "No war experience", "Living in Kyiv now", "Living in Kyiv before 24th", "Fast news", "Slow news", "War experience", "Expects worse", "Expects better", "Expects much worse", "Expects much better", "Expects the same", "Secondary education", "Technical education", "BSc or MSc", "PhD"),
-          header=FALSE, 
-          title="Regression results", 
-          type='text', 
-          digits=3,
-          style = "aer",
-          font.size = "small",
-          align = TRUE,
-          omit = c("Constant"),
-          omit.stat=c("f", "ser"),
-          no.space=TRUE)
-```
-
-```{r}
-data_tobit <- data_full_cat[, c(1:16)]
-mod_tobit <- tobit(score ~ ., left = 0, data = data_tobit)
-stargazer(mod_tobit,          
-          header=FALSE, 
-          title="Regression results", 
-          type='text', 
-          digits=3,
-          style = "aer",
-          font.size = "small",
-          align = TRUE,
-          omit = c("Constant"),
-          omit.stat=c("f", "ser"),
-          no.space=TRUE)
-
-
-data_t <- data_tobit %>% 
-  filter(score > 0)
-
-mod_tibit <- lm(score ~ ., data_t)
-stargazer(mod_tibit, mod_tobit, mod,          
-          header=FALSE, 
-          title="Regression results", 
-          type='text', 
-          digits=3,
-          style = "aer",
-          font.size = "small",
-          align = TRUE,
-          omit = c("Constant"),
-          omit.stat=c("f", "ser"),
-          no.space=TRUE)
-
-
-corrplot(cor(data_tobit))
-```
-
-```{r}
-stargazer(mod, mod_t,
-          covariate.labels = c("Income", "Debts", "Year of birth", "Gender", "Employment", "No war experience", "Living in Kyiv now", "Living in Kyiv before 24th", "Fast news", "Slow news", "War experience", "Expects worse", "Expects better", "Expects much worse", "Expects much better", "Expects the same", "Secondary education", "Technical education", "BSc or MSc", "PhD"),
-          header=FALSE, 
-          title="Regression results", 
-          type='text', 
-          digits=3,
-          style = "aer",
-          font.size = "small",
-          align = TRUE,
-          omit = c("Constant"),
-          omit.stat=c("f", "ser"),
-          no.space=TRUE)
-```
-
-```{r}
-graph_anomalies_indiv <- function (dat_grap){
-  des4 <- merge(dat_item, dat_grap, by= "ResponseId") %>% 
-    group_by(Residence) %>% 
-    count(anomaly) %>% 
-    mutate(suma = sum(n), prop = n/suma) %>% 
-    ggplot(aes(y = prop,
-               x = anomaly,
-               group = factor(anomaly),
-               colour = factor(anomaly))) +
-    geom_jitter(alpha = 0.9,
-                size = 7,
-                pch=19) +
-    stat_summary(fun.data = mean_cl_normal, 
-                 geom = "pointrange",
-                 size = 1, color = "black") +
-    theme_bw(base_size = 10) +
-    theme(legend.position = "none")+
-    ylab("Proportion of decisions") +
-    xlab("Type of decision") +
-    scale_colour_manual(values=palette_Dark2(length(table(dat_grap$anomaly))),
-                        name = "Type of anomaly") +
-    ylim(0,1)
-  
-  
-  des5 <- merge(dat_item, dat_grap, by= "ResponseId") %>%
-    filter(str_detect(response, 'ongruent')) %>%
-    group_by(Residence) %>% 
-    count(response) %>% 
-    mutate(suma = sum(n), prop = n/suma) %>% 
-    ggplot(aes(y = prop,
-               x = response,
-               group = factor(response),
-               colour = factor(response))) +
-    geom_jitter(alpha = 0.9,
-                size = 7,
-                pch = 19) +
-    ylim(0,1)+
-    stat_summary(fun.data = mean_cl_normal, 
-                 geom = "pointrange",
-                 size = 1, 
-                 color = "black") +
-    theme_bw(base_size = 10) +
-    theme(legend.position = "none")+
-    ylab("Proportion of total anomalies") +
-    xlab("Type of anomaly") +
-    #ylim(0,800)+
-    scale_colour_manual(values=palette_Dark2(length(table(dat_grap$anomaly))),
-                        name = "Type of anomaly")
-  
-  layout <- c(
-    area(t = 1, l = 1, b = 6, r = 3),
-    area(t = 1, l = 5, b = 8, r = 8))
-  
-  des6 <- des4 + des5 + 
-    plot_layout(design = layout)
-  
-  return (des6)
-  
-}
-
-
-graph_map <- function (data = NULL, var = "var", lowmin = NULL, upplim = NULL, pal = NULL, col = NULL, title = NULL) {
-  mp1 <- ggplot(data) +
-    geom_sf(aes_string(fill = var)) +
-    coord_sf(datum = NA) +
-    
-    scale_fill_continuous(low="#ba0404", 
-                          high="#080887", 
-                          limits=c(lowmin,upplim), na.value = "white") +
-    #scale_fill_material(col, na.value = "white")+
-    bbc_theme() +
-    theme(legend.position="bottom",
-          legend.text = element_text(size = 15))+
-     ggtitle(paste0(title)) + 
-    guides(colour = guide_legend(override.aes = list(size = 5))) +  
-    theme(legend.key.size = unit(1.5, "cm"))
-    
-  return(mp1)
-}
-```
-
-
-```{r}
-library(dplyr)
-library(tidyverse)
-library(readr)
-library(haven)
-library(autostsm)
-require(data.table)
-library(readxl)
-library(lubridate)
-
-library(shiny)
-library(leaflet)
-library(rgdal)
-library(ggplot2)
-library(jsonlite)
-library(stringr)   
-library(sp)
-library(RColorBrewer)
-
-```
 
 ## Ukraine regional map
 
@@ -2446,6 +2202,7 @@ new_attributes <- rename_columns(new_attributes, "\\-", "_")
 # 
 # 
 # #map@data <- cbind(map@data, newer_attributes)
+
 ```
 
 ```{r}
