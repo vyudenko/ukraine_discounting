@@ -909,16 +909,14 @@ dt <- data_copy[, c(1, 31:34, 37:39)] %>%
 dt$intensity <- rowSums(dt[,c(11:18)])
 
 
-mod_ord_test1 <- lm(score.c ~ monthly_inc + monthly_house_inc + fwb_expect + fwb_war + debts, data = dt)
+mod_ord_test1 <- lm(score.c ~ monthly_inc + fwb_expect + fwb_war + debts, data = dt)
 mod_ord_test2 <- lm(score.c ~ 
-                      inc_5 + inc_20 + inc_40 + inc_60 + inc_80 + inc_100 + finc_5 + 
-                      finc_20 + finc_40 + finc_60 + finc_80 + finc_100 +
+                      inc_5 + inc_20 + inc_40 + inc_60 + inc_80 + inc_100 + 
                       expect_much_better + expect_better + expect_worse + expect_much_worse + 
                       change_much_better + change_better + change_worse + change_much_worse + 
                       debts, data = dt)
 mod_ord_test3 <- lm(score.c ~ monthly_inc + monthly_house_inc + debts + fwb_expect + fwb_war + 
-                      inc_5 + inc_20 + inc_40 + inc_60 + inc_80 + inc_100 + finc_5 + 
-                      finc_20 + finc_40 + finc_60 + finc_80 + finc_100 +
+                      inc_5 + inc_20 + inc_40 + inc_60 + inc_80 + inc_100 +
                       expect_much_better + expect_better + expect_worse + expect_much_worse + 
                       change_much_better + change_better + change_worse + change_much_worse + 
                       debts, data = dt)
@@ -1012,12 +1010,6 @@ data_mediation <- dt[, c(3:11,20:31,33:37,41,43,46,47,50,63:67,117)]
 # corrplot::cor.mtest(corr_med, conf.level = 0.95)
 # p.mat
 ```
-
-```{r cronbach alpha}
-
-```
-
-
 
 ```{r TD ~ FULL}
 full_score <- lm(score.c ~ ., data = dt[,-c(1,28:36,39,48:90,105:111,112:116)])
@@ -1625,23 +1617,23 @@ PROCESS(data = data_mediation,
 ```
 
 ```{r}
-library(UpSetR)
-data_venn <- data_mediation[,c(9:22)]
-data_venn <- as.data.frame(data_venn)
-upset(data_venn, order.by = "freq", sets = c("evacuate", 
-                          "occupation", 
-                          "bombing",
-                          "prop_dmg", 
-                          "phys_viol", 
-                          "emo_viol", 
-                          "robbery", 
-                          "fam_afu", 
-                          "fam_death", 
-                          "phys_injury", 
-                          "depression", 
-                          "confid_loss",
-                          "insom",
-                          "no_effect"))
+# library(UpSetR)
+# data_venn <- data_mediation[,c(9:22)]
+# data_venn <- as.data.frame(data_venn)
+# upset(data_venn, order.by = "freq", sets = c("evacuate", 
+#                           "occupation", 
+#                           "bombing",
+#                           "prop_dmg", 
+#                           "phys_viol", 
+#                           "emo_viol", 
+#                           "robbery", 
+#                           "fam_afu", 
+#                           "fam_death", 
+#                           "phys_injury", 
+#                           "depression", 
+#                           "confid_loss",
+#                           "insom",
+#                           "no_effect"))
 ```
 
 ## EDA
@@ -1659,24 +1651,36 @@ my_var <- var(dt$score)
 F_stat <- my_var / ruggeri_var
 
 # Plotting
+
+F_stat
+# Plot using the combined data
 ggplot() +
-  geom_density(data = ruggeri_2021, aes(score), fill = "blue", alpha = 0.4, bins = 17) +
-  geom_density(data = dt, aes(score), fill = "red", alpha = 0.4) +
-  geom_vline(aes(xintercept = ruggeri_mean), color = "blue", linetype = "dashed") +
-  geom_vline(aes(xintercept = my_mean), color = "red", linetype = "dashed") +
-  annotate("text", x = Inf, y = Inf, hjust = 1, vjust = 1,
-           label = paste("Ruggeri 2021 Mean:", round(ruggeri_mean, 2),
-                         "\nRuggeri 2021 Variance:", round(ruggeri_var, 2),
-                         "\nMy Mean:", round(my_mean, 2),
-                         "\nMy Variance:", round(my_var, 2),
-                         "\nF-stat:", round(F_stat, 2)),
-           size = 3) +
-  labs(title = "Comparison of Distributions",
-       x = "Score", y = "Density") +
-  theme_minimal()
+  # Histograms
+  geom_histogram(data = ruggeri_2021, aes(x = score, y = ..density.., fill = "Ruggeri (2022)"), alpha = 0.45, bins = 17, position = "identity") +
+  geom_histogram(data = dt, aes(x = score, y = ..density.., fill = "Present Study"), alpha = 0.45, bins = 17, position = "identity") +
+  geom_vline(aes(xintercept = ruggeri_mean), color = "blue", linetype = "dashed", size = 1.5) +
+  geom_vline(aes(xintercept = my_mean), color = "red", linetype = "dashed", size = 1.5) +
+  
+  # Other elements
+  labs(title = "", x = "Temporal Discounting Score", y = "") +
+  scale_fill_manual(values = c("Ruggeri (2022)" = "blue", "Present Study" = "red")) +
+  
+  # X-axis labels and breaks adjustment
+  scale_x_continuous(breaks = seq(0, 17, by = 2)) + # Even numbers
+  
+  theme_minimal() +
+  theme(
+    text = element_text(family = "Garamond", size = 18),
+    legend.position = c(0.95, 0.95),
+    legend.justification = c(1, 1),
+    legend.background = element_rect(color = "black", fill = "white"),
+    legend.key = element_rect(color = "white"),
+    panel.grid.major.x = element_line(color = "grey90")
+  ) +
+  guides(fill = guide_legend(title = NULL))
 ```
 
-```{r income plots, warning=FALSE, message=FALSE, echo=FALSE}
+```{r INCOME PLOT}
 # Calculate the number of "Don't want" responses for each question
 dontwant_count_q21 <- sum(data_copy$q21 == 7)
 dontwant_count_q21_1 <- sum(data_copy$q21_1 == 7)
@@ -1684,86 +1688,66 @@ dontwant_count_q21_1 <- sum(data_copy$q21_1 == 7)
 # Filter out "Don't want" responses from data_copy for g2 plot
 data_copy_filtered_g2 <- data_copy[data_copy$q21 != 7,]
 
-# g2 Plot
-g2 <- ggplot(data_copy_filtered_g2, aes(q21, fill = demo_gender)) +
-  geom_bar() +
-  labs(title = "Individual income",
-       x = "",
-       y = "Frequency of responses",) +
-  geom_text(aes(label = ..count..), 
-            stat = 'count', vjust = -0.5, 
-            color = "black", size = 5, 
-            family = "Garamond") +
-  theme_classic() +
-  theme(text = element_text(family = "Garamond", size = 12),
-        plot.title = element_text(hjust = 0.5),
-        axis.text.y = element_blank()) +
-  scale_x_continuous(breaks = c(1,2,3,4,5,6), 
-                     labels = c("5-",
-                                "5-19",
-                                "20-39",
-                                "40-59",
-                                "60-79",
-                                "80+"))
 
 # Filter out "Don't want" responses from data_copy for g1 plot
 data_copy_filtered_g1 <- data_copy[data_copy$q21_1 != 7,]
 
 # g2 Plot
-g2 <- ggplot(data_copy_filtered_g2, aes(q21, fill = demo_gender)) +
+g2 <- ggplot(data_copy_filtered_g2, aes(y = q21, fill = demo_gender)) +
   geom_bar() +
   labs(title = "Individual income",
-       x = "",
-       y = "Frequency of responses",) +
+       x = "Frequency of responses",
+       y = "") +
   geom_text(aes(label = ..count..), 
-            stat = 'count', vjust = -0.5, 
+            stat = 'count', hjust = 1.5, 
             color = "black", size = 5, 
             family = "Garamond") +
   theme_classic() +
-  theme(text = element_text(family = "Garamond", size = 12),
+  theme(text = element_text(family = "Garamond", size = 14),
         plot.title = element_text(hjust = 0.5),
-        axis.line.y = element_blank(),
-        axis.ticks.y = element_blank(),
-        axis.text.y = element_blank()) +
-  scale_x_continuous(breaks = c(1,2,3,4,5,6), 
+        axis.line.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.text.x = element_blank()) +
+  scale_y_continuous(breaks = c(1,2,3,4,5,6), 
                      labels = c("5-",
                                 "5-19",
                                 "20-39",
                                 "40-59",
                                 "60-79",
                                 "80+")) +
-  scale_y_continuous(limits = c(0, 510))
+  coord_flip() +
+  scale_x_reverse()
 
-# g1 Plot
-g1 <- ggplot(data_copy_filtered_g1, aes(x = q21_1)) +
+# g1 Plot (left-facing)
+g1 <- ggplot(data_copy_filtered_g1, aes(y = q21_1)) +
   geom_bar() +
   labs(title = "Household income",
-       x = "",
-       y = "",
-       caption = "116 respondents chose not to disclose their individual income and 133 - household income. 
-       There were no cases of people reporting a lower household income and higher individual.") +
+       x = "Frequency of responses",
+       y = "") +
   geom_text(aes(label = ..count..), 
-            stat = 'count', vjust = -0.5, 
+            stat = 'count', hjust = -0.5, 
             color = "black", size = 5, 
             family = "Garamond") +
   theme_classic() +
-  theme(text = element_text(family = "Garamond", size = 12),
+  theme(text = element_text(family = "Garamond", size = 14),
         plot.caption = element_text(size = 11),
         plot.title = element_text(hjust = 0.5),
-        axis.line.y = element_blank(),
-        axis.ticks.y = element_blank(),
-        axis.text.y = element_blank()) +
-  scale_x_continuous(breaks = c(1,2,3,4,5,6), 
+        axis.line.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.text.x = element_blank()) +
+  scale_y_continuous(breaks = c(1,2,3,4,5,6), 
                      labels = c("5-",
                                 "5-19",
                                 "20-39",
                                 "40-59",
                                 "60-79",
                                 "80+")) +
-  scale_y_continuous(limits = c(0, 510))
+  coord_flip()
 
 # Combine the plots
-(g2 + g1)
+
+g1 <- g1 + scale_y_reverse()
+gridExtra::grid.arrange(g1, g2, ncol = 2)
 ```
 
 ```{r}
@@ -1860,7 +1844,7 @@ ggplot(data_copy, aes(x = as.factor(demo_age_int))) +
 ########################
 
 
-ggplot(data_copy, aes(x = as.factor(q20))) +
+ggplot(dt, aes(x = as.factor(fwb_expect))) +
   geom_bar() +
   labs(title = "",
        x = "",
@@ -1879,7 +1863,44 @@ ggplot(data_copy, aes(x = as.factor(q20))) +
 
 ```
 
-```{r, warning=FALSE, message=FALSE, echo=FALSE}
+```{r FWB}
+dt$fwb_expect <- factor(dt$fwb_expect, levels = c(2, 1, 0, -1, -2), 
+                        labels = c('Much better', 'Better', 'Same', 'Worse', 'Much worse'))
+
+dt$fwb_war <- factor(dt$fwb_war, levels = c(2, 1, 0, -1, -2), 
+                     labels = c('Much better', 'Better', 'Same', 'Worse', 'Much worse'))
+
+# Gathering data to long format for easier plotting
+dt_long <- dt %>% 
+  select(fwb_expect, fwb_war) %>% 
+  gather(question, response, everything())
+
+# Plotting
+count_expect <- dt %>% group_by(fwb_expect) %>% summarise(n=n())
+count_war <- dt %>% group_by(fwb_war) %>% summarise(n=-n())  # Negative for pointing left
+
+# Plot
+ggplot() +
+  geom_bar(data=count_expect, aes(x=fwb_expect, y=n, fill="Expected Change"), stat="identity") +
+  geom_bar(data=count_war, aes(x=fwb_war, y=n, fill="Actual Change"), stat="identity") +
+  geom_text(data=count_expect, aes(x=fwb_expect, y=n/2, label=n), position=position_dodge(width=0.9)) +
+  geom_text(data=count_war, aes(x=fwb_war, y=n/2, label=-n), position=position_dodge(width=0.9)) +
+  labs(x="Response",
+       y="Count",
+       fill="Question",
+       title="Distribution of Financial Wellbeing Responses") +
+  theme_minimal() +
+  coord_flip() +
+  scale_fill_manual(values=c("skyblue", "salmon")) +
+  scale_y_continuous(labels=abs)  # Absolute value for y-axis labels
+```
+
+```{r MH PLOT}
+
+```
+
+
+```{r OBLAST PLOT}
 ggplot(data_copy, aes(x = geosoc6)) +
   geom_bar() +
   labs(title = "What best characterizes your actions after Feb 24th 2022?",
@@ -1945,265 +1966,138 @@ ggplot(data_copy, aes(x = oblast_moving)) +
 
 ```
 
-```{r, warning=FALSE, message=FALSE, echo=FALSE}
-plot_war <- dt %>% 
-  select(evacuate,occupation,bombing,prop_dmg,phys_viol,emo_viol,robbery , fam_afu ,fam_death, phys_injury, depression, confid_loss, insom ,no_effect)
-
-library(PerformanceAnalytics)
-chart.Correlation(plot_war, histogram=F)
-
+```{r CORR + ALPHA}
 library(corrr)
 library(corrplot)
-
+library(fontawesome)
+library(correlation)
+# Extract the relevant columns from the dataframe
+plot_war <- dt %>% 
+  select(occupation, bombing, prop_dmg, phys_viol, emo_viol, robbery, fam_afu, fam_death, phys_injury, depression, confid_loss, insom, no_effect)
 
 # Compute the correlation matrix and the p-value matrix
-correlation.matrix<-cor(plot_war) 
+correlation.matrix <- cor(plot_war) 
 p.mat <- corrplot::cor.mtest(plot_war, conf.level = 0.95)$p
 
-rownames(correlation.matrix) <- c("Evacuation", 
-                               "Occupation", 
-                               "Bombing",
-                               "Property", 
-                               "Physical", 
-                               "Emotional", 
-                               "Robbery", 
-                               "AFU", 
-                               "Decease",
-                               "Injury", 
-                               "Depression", 
-                               "Insecurity",
-                               "Insomnia")
-colnames(correlation.matrix) <- c("Evacuation", 
-                               "Occupation", 
-                               "Bombing",
-                               "Property", 
-                               "Physical", 
-                               "Emotional", 
-                               "Robbery", 
-                               "AFU", 
-                               "Decease",
-                               "Injury", 
-                               "Depression", 
-                               "Insecurity",
-                               "Insomnia")
+# Mask non-significant values in the correlation matrix
+is.significant <- p.mat < 0.05
+correlation.matrix[!is.significant] <- 0
 
-corrplot(correlation.matrix, method="circle", type="upper", 
-         tl.col="black", tl.srt=45, tl.cex=0.7,
-         order="hclust", 
-         addgrid.col = NA, 
-         title="Correlation Matrix", mar=c(0,0,1,0),
-         diag=FALSE,
-         cl.cex=0.7,
-         tl.pos="lt",
-         col=colorRampPalette(c("#BB4444", "#EE9988", "#FFFFFF", "#77AADD", "#4477AA"))(200),
-         p.mat = p.mat, # Add the matrix of p-values
-         sig.level = 0.05, # Specify the significance level
-         insig = "pch",    # Use symbols for significance
-         pch.cex = 1.5,    # Size of the symbols
-         pch.col = "red",  # Color of the symbols
-         signif.legend=TRUE, # Show legend for significance
-         legend.pos="bottom", # Position of the legend
-         addCoef.col = "black" # Color of the correlation coefficients
-         )
+# Mask the diagonal values
+diag(correlation.matrix) <- 0
+
+# Create the corrplot
 
 
+# Change the row and column names
+colnames(correlation.matrix) <- c("Occupation", "Bombing", "Property", "Physical", 
+                                  "Emotional", "Robbery", "AFU", "Perish", 
+                                  "Injury", "Depression", "Insecurity", "Insomnia", "No effect")
+
+rownames(correlation.matrix) <- colnames(correlation.matrix)
+
+# Create a more contrasting palette centered around -0.3 to 0.3 range
+neg_colors <- colorRampPalette(c("#D32F2F", "#FFEBEE"))(150) # For negative correlations
+neutral_colors <- "#E0E0E0" # Neutral gray for near-zero correlations
+pos_colors <- colorRampPalette(c("#E3F2FD", "#1976D2"))(150) # For positive correlations
+
+contrast_colors_centered <- c(neg_colors, neutral_colors, pos_colors)
+
+# First plot the lower triangle with numbers
+corrplot(correlation.matrix, 
+         type = "lower", 
+         method = "number",
+         tl.col = "black", 
+         tl.srt = 45, 
+         tl.cex = 0.9, 
+         tl.pos = "lt", 
+         order = "original", 
+         mar = c(0,0,1,0), 
+         addCoef.col = "black",
+         cl.pos="n",
+         number.cex = 1, 
+         number.font = 2, # Bold font for better visibility
+         number.col = "black", # Making the numbers black
+         tl.font = "Garamond",   # Title and Axis Font
+         number.fontface = "Garamond",  # Numbers Font
+         cl.cex = 0.9)
+
+corrplot(correlation.matrix, 
+         type = "upper", 
+         method = "circle", 
+         tl.pos = "n",  # No text labels for upper triangle
+         cl.cex = 1,
+         add = TRUE, 
+         col = contrast_colors_centered)
 
 
-stargazer(correlation.matrix,title="Correlation Matrix", 
-          type = "text",
-          dep.var.labels = c("Evacuation", 
-                               "Occupation", 
-                               "Bombing",
-                               "Property", 
-                               "Physical", 
-                               "Emotional", 
-                               "Robbery", 
-                               "AFU", 
-                               "Decease",
-                               "Injury", 
-                               "Depression", 
-                               "Insecurity",
-                               "Insomnia"))
+# library(tidygraph)
+# library(see)
+# library(ggraph)
+# 
+# plot_war %>% 
+#   correlation(partial = F) %>% 
+#   plot()
 
+
+
+cronbach_war <- dt %>% 
+  select(occupation, bombing, prop_dmg, phys_viol, emo_viol, robbery, fam_afu, fam_death)
+
+library(psych)
+alpha(cronbach_war)
 ```
 
-```{r}
-plot_discount <- dat_unique[,c(14, 18, 23:37,46, 63)]
-ggplot(plot_discount, aes(x = score)) +
-  geom_histogram(bins = 18) +
-  theme_classic() +
-  facet_wrap(~q28_5)
+```{r SUMMARY TABLES}
+table_war_exper <- dt %>%
+  select(gender, occupation, bombing, prop_dmg, phys_viol, emo_viol, robbery, fam_afu, fam_death, war_no_ans, phys_injury, depression, confid_loss, insom, no_effect, eff_no_ans)
 
+# Create table
+table_df <- table_war_exper %>%
+  group_by(gender) %>%
+  summarise(
+    N = n(),
+    Mean_Occupation = sum(occupation, na.rm = TRUE),
+    Mean_Bombing = sum(bombing, na.rm = TRUE),
+    Mean_Property = sum(prop_dmg, na.rm = TRUE),
+    Mean_Physical = sum(phys_viol, na.rm = TRUE),
+    Mean_Emotional = sum(emo_viol, na.rm = TRUE),
+    Mean_Robbery = sum(robbery, na.rm = TRUE),
+    Mean_AFU = sum(fam_afu, na.rm = TRUE),
+    Mean_Perish = sum(fam_death, na.rm = TRUE),
+    Mean_war_no_ans = sum(war_no_ans, na.rm = T),
+    Mean_phys_injury = sum(phys_injury, na.rm = T),
+    Mean_depression = sum(depression, na.rm = T),
+    Mean_confid_loss = sum(confid_loss, na.rm = T),
+    Mean_insom = sum(insom, na.rm = T),
+    Mean_no_effect = sum(no_effect, na.rm = T),
+    Mean_eff_no_ans = sum(eff_no_ans, na.rm = T)
+  ) %>%
+  pivot_longer(
+    cols = starts_with("Mean_"),
+    names_to = "Variable",
+    values_to = "Mean"
+  ) %>%
+  mutate(Variable = str_remove(Variable, "Mean_"))
+
+# Widen the table
+final_table <- table_df %>%
+  pivot_wider(
+    names_from = gender,
+    values_from = Mean,
+    names_prefix = "Mean_",
+    id_cols = "Variable"
+  ) %>%
+  rename(Female = Mean_1, Male = Mean_0) %>%
+  mutate(Total = Female + Male)
+
+final_table
 ```
-
 
 
 ## Ukraine regional map
 
 
-```{r}
-#load the original file
-cons <- read_csv("gtrendsdata.csv")
-
-# consumer index
-consumer_index <- cons %>%
-  group_by(geo, date) %>%
-  summarise(consumer_index = sum(hits)) %>%
-  ungroup()
-region_names <- data.frame(
-  geo = c("UA-71", 
-          "UA-74", 
-          "UA-77", 
-          "UA-12", 
-          "UA-14", 
-          "UA-26", 
-          "UA-63",
-          "UA-65",
-          "UA-68",
-          "UA-32", 
-          "UA-35", 
-          "UA-09",
-          "UA-46",
-          "UA-48",
-          "UA-51",
-          "UA-53",
-          "UA-56",
-          "UA-59",
-          "UA-61",
-          "UA-05",
-          "UA-07",
-          "UA-21",
-          "UA-23",
-          "UA-18",
-          "UA-30",
-          "UA-40",
-          "UA-43"),
-  region = c("Cherkasy", 
-             "Chernihiv", 
-             "Chernivtsi", 
-             "Dnipropetrovsk", 
-             "Donetsk", 
-             "Ivano-Frankivsk", 
-             "Kharkiv", 
-             "Kherson", 
-             "Khmelnytskyi", 
-             "Kiev", 
-             "Kirovohrad", 
-             "Luhansk", 
-             "Lviv", 
-             "Mykolaiv", 
-             "Odessa", 
-             "Poltava", 
-             "Rivne", 
-             "Sumy", 
-             "Ternopil", 
-             "Vinnytsia", 
-             "Volyn", 
-             "Zakarpattia",
-             "Zaporizhia",
-             "Zhytomyr", 
-             "Kyiv City", 
-             "Sevastopol' city", 
-             "Crimea")
-)
-consumer_index <- consumer_index %>%
-  left_join(region_names, by = "geo") %>%
-  select(-geo)
-
-consumer_index$date <- as.Date(consumer_index$date, format = "%Y-%m-%d") 
-
-consumer_index_wider <- consumer_index %>% 
-  pivot_wider(names_from = "region", values_from = c("consumer_index"))
-
-rownames(consumer_index_wider) <- consumer_index_wider$date
-row_names <- rownames(consumer_index_wider)
-consumer_index_wider$date <- NULL
-
-# transpose the dataframe
-consumer_index_wider_trans <- t(consumer_index_wider)
-
-consumer_index_clean <- as.data.frame(consumer_index_wider_trans)
-colnames(consumer_index_clean) <- row_names
-consumer_index_clean <- consumer_index_clean %>% rownames_to_column("id")
-
-consumer_index_clean <- consumer_index_clean %>%
-  mutate(id = ifelse(id == "Zaporizhia", "Zaporizhzhia", ifelse(
-    id == "Kiev", "Kyiv", id))) %>% 
-  rename(oblast = id)
-
-map <- readOGR("~data/stanford-ukraine.json")
-
-df <- fortify(map)
-#  
-# # Convert numeric strings to text
-df <- df %>%
-    mutate(id = as.character(id),
-      id = case_when(
-      id == 0 ~ "Cherkasy",
-      id == 1 ~ "Chernihiv",
-    id == 2 ~ "Chernivtsi",
-      id == 3 ~ "Crimea",
-      id == 4 ~ "Dnipropetrovsk",
-      id == 5 ~ "Donetsk",
-      id == 6 ~ "Kharkiv",
-      id == 7 ~ "Kherson",
-      id == 8 ~ "Khmelnytskyi",
-      id == 9 ~ "Kyiv City",
-      id == 10 ~ "Kyiv",
-      id == 11 ~ "Kirovohrad",
-      id == 12 ~ "Lviv",
-      id == 13 ~ "Luhansk",
-    id == 14 ~ "Mykolaiv",
-      id == 15 ~ "Odessa",
-      id == 16 ~ "Poltava",
-    id == 17 ~ "Rivne",
-      id == 18 ~ "Sevastopol' City",
-      id == 19 ~ "Sumy",
-      id == 20 ~ "Ivano-Frankivsk",
-    id == 21 ~ "Ternopil",
-    id == 22 ~ "Zakarpattia",
-      id == 23 ~ "Vinnytsia",
-      id == 24 ~ "Volyn",
-      id == 25 ~ "Zaporizhzhia",
-      id == 26 ~ "Zhytomyr",
-      TRUE ~ "Unknown"
-    )
-)
-
-df <- df %>% 
-    rename(oblast = id)
-
-merged <- left_join(df, consumer_index_clean, by = "oblast")
-new_attributes <- merged[,-c(1:5,7)] %>% 
-  distinct()
-
-# Function to rename columns using gsub()
-rename_columns <- function(df, pattern, replacement) {
-  colnames(df) <- gsub(pattern, replacement, colnames(df))
-  return(df)
-}
-
-# Rename the columns using gsub()
-new_attributes <- rename_columns(new_attributes, "\\-", "_")
-```
-
-```{r map}
-# library(leaflet)
-# library(rgdal)
-# library(jsonlite)
-# library(stringr)   
-# library(sp)
-# library(sf)
-# 
-# map <- readOGR("data/stanford-ukraine.json")
-# 
-# map@data[["name_1"]] <- unique(data_clean$region_before_en)
-# map@data <- left_join(map@data, data_clean$geo, by = c("name_1" = "geo"))
-# 
-# 
-# #map@data <- cbind(map@data, newer_attributes)
-
-```
 
 ```{r}
 # Survey answers deciphered
