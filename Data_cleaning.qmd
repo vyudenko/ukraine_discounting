@@ -906,7 +906,7 @@ dt <- data_copy[, c(1, 31:34, 37:39)] %>%
       feel_sad == 6 ~ 5)) %>% 
   left_join(dat, by = "ResponseId")
 
-dt$intensity <- rowSums(dt[,c(11:18)])
+dt$intensity <- rowSums(dt[,c(11:18)])/8
 
 
 mod_ord_test1 <- lm(score.c ~ monthly_inc + fwb_expect + fwb_war + debts, data = dt)
@@ -1099,10 +1099,25 @@ ggplot(results_war, aes(x = estimate, y = reorder(term, estimate))) +
   )
 ```
 
-```{r TD ~ War|Kids}
-test_no_kids <- lm(score.c ~ evacuate + occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + no_effect + region_war + age + gender, subset(dt, no_kids == 1))
+```{r TD ~ Intensity*Debts}
+mod_int_debt <- lm(score.c ~ intensity + intensity*debts_small + intensity*debts_medium, data = dt)
 
-test_kids <- lm(score.c ~ evacuate + occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + no_effect + region_war + age + gender, subset(dt, no_kids == 0))
+stargazer(mod_int_debt,
+          header=FALSE,
+          type='text', 
+          digits=3,
+          font.size = "normalsize",
+          align = TRUE,
+          omit.stat=c("f", "ser"),
+          column.sep.width = "-25pt")
+```
+
+
+
+```{r TD ~ War|Kids}
+test_no_kids <- lm(score.c ~ intensity + occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + no_effect + region_war + age + gender, subset(dt, no_kids == 1))
+
+test_kids <- lm(score.c ~ intensity + occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + no_effect + region_war + age + gender, subset(dt, no_kids == 0))
 
 stargazer(test_no_kids, 
           test_kids,
@@ -1116,9 +1131,9 @@ stargazer(test_no_kids,
 ```
 
 ```{r TD ~ War|Region}
-war_td <- lm(score.c ~ evacuate + occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + no_effect + age + gender, data = subset(dt, region_war == 1))
+war_td <- lm(score.c ~ intensity + occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + no_effect + age + gender, data = subset(dt, region_war == 1))
 
-no_war_td <- lm(score.c ~ evacuate + occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + no_effect +  age + gender, data = subset(dt, region_war == 0))
+no_war_td <- lm(score.c ~ intensity + occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + no_effect +  age + gender, data = subset(dt, region_war == 0))
 
 stargazer(war_td, no_war_td,
           header=FALSE,
@@ -1131,15 +1146,15 @@ stargazer(war_td, no_war_td,
 ```
 
 ```{r TD ~ FWB}
-mod_fwb_score <- lm(score.c ~ monthly_inc + monthly_house_inc + fwb_expect + fwb_war + debts, dt)
+mod_fwb_score <- lm(score.c ~ monthly_house_inc + fwb_expect + fwb_war + debts, dt)
 
-mod_fwb_pres <- glm(presbias ~ monthly_inc + monthly_house_inc + fwb_expect + fwb_war + debts, dt, family = binomial("logit"))
+mod_fwb_pres <- glm(presbias ~ monthly_house_inc + fwb_expect + fwb_war + debts, dt, family = binomial("logit"))
 
-mod_fwb_absl <- glm(absolmag ~ monthly_inc + monthly_house_inc + fwb_expect + fwb_war + debts, dt, family = binomial("logit"))
+mod_fwb_absl <- glm(absolmag ~ monthly_house_inc + fwb_expect + fwb_war + debts, dt, family = binomial("logit"))
 
-mod_fwb_gl <- glm(gainloss ~ monthly_inc + monthly_house_inc + fwb_expect + fwb_war + debts, dt, family = binomial("logit"))
+mod_fwb_gl <- glm(gainloss ~ monthly_house_inc + fwb_expect + fwb_war + debts, dt, family = binomial("logit"))
 
-mod_fwb_dl <- glm(delayspeed ~ monthly_inc + monthly_house_inc + fwb_expect + fwb_war + debts, dt, family = binomial("logit"))
+mod_fwb_dl <- glm(delayspeed ~ monthly_house_inc + fwb_expect + fwb_war + debts, dt, family = binomial("logit"))
 
 stargazer(mod_fwb_score, 
           mod_fwb_pres, 
@@ -1188,6 +1203,32 @@ ggplot(results_fwb, aes(x = estimate, y = reorder(term, estimate))) +
     panel.grid.minor = element_blank(),
     text = element_text(family = "Garamond", size = 14)
   )
+```
+
+
+```{r TD ~ FWB*MH}
+# mod_fwbmh <- lm(score.c ~ monthly_house_inc + monthly_house_inc*feel_sad + fwb_expect + fwb_expect*feel_sad + fwb_war + fwb_war*feel_sad + debts + debts*feel_sad, dt)
+# 
+# mod_fwbmh_p <- glm(presbias ~  monthly_house_inc + monthly_house_inc*feel_sad + fwb_expect + fwb_expect*feel_sad + fwb_war + fwb_war*feel_sad + debts + debts*feel_sad, dt, family = binomial("logit"))
+# 
+# mod_fwbmh_ab <- glm(absolmag ~  monthly_house_inc + monthly_house_inc*feel_sad + fwb_expect + fwb_expect*feel_sad + fwb_war + fwb_war*feel_sad + debts + debts*feel_sad, dt, family = binomial("logit"))
+# 
+# mod_fwbmh_gl <- glm(gainloss ~  monthly_house_inc + monthly_house_inc*feel_sad + fwb_expect + fwb_expect*feel_sad + fwb_war + fwb_war*feel_sad + debts + debts*feel_sad, dt, family = binomial("logit"))
+# 
+# mod_fwbmh_dl <- glm(delayspeed ~  monthly_house_inc + monthly_house_inc*feel_sad + fwb_expect + fwb_expect*feel_sad + fwb_war + fwb_war*feel_sad + debts + debts*feel_sad, dt, family = binomial("logit"))
+# 
+# stargazer(mod_fwbmh, 
+#           mod_fwbmh_p, 
+#           mod_fwbmh_ab, 
+#           mod_fwbmh_gl,  
+#           mod_fwbmh_dl, 
+#           header=FALSE,
+#           type='text', 
+#           digits=3,
+#           font.size = "normalsize",
+#           align = TRUE,
+#           omit.stat=c("f", "ser"),
+#           column.sep.width = "-25pt")
 ```
 
 
@@ -1407,6 +1448,34 @@ stargazer(income_td,
 ```{r TD ~ Region}
 # code up untill this point
 ```
+
+```{r robust checks}
+sirens <- read.csv("data/official_data_en.csv")
+temp <- sirens$oblast[17]
+sirens$oblast[17] <- sirens$raion[17]
+sirens$raion[17] <- temp
+
+sirens$started_at <- as.POSIXct(sirens$started_at, format="%Y-%m-%d %H:%M:%S")
+sirens$finished_at <- as.POSIXct(sirens$finished_at, format="%Y-%m-%d %H:%M:%S")
+sirens$duration_hours <- as.numeric(difftime(sirens$finished_at, sirens$started_at, units="hours"))
+summary_sirens <- sirens %>%
+  group_by(oblast) %>%
+  summarise(
+    total_sirens = n(),
+    total_duration_hours = sum(duration_hours)
+  )
+
+kse_data <- read.csv("data/geography.csv")
+
+#https://air-alarms.in.ua/en?from=2022-02-24&to=2023-09-26#statistic
+sirens_data <- data.frame(oblast = c("Вінницька", "Волинська", "Дніпропетровська", "Донецька", "Житомирська", "Закарпатська", "Запорізька", "Івано-Франківська", "Київська", "Кіровоградська", "Луганська", "Львівська", "м. Київ", "Миколаївська", "Одеська", "Полтавська", "Рівненська", "Сумська", "Тернопільська", "Харківська", "Херсонська", "Хмельницька", "Черкаська", "Чернівецька", "Чернігівська"),
+                          sirens_count = c(),
+                          sirens_duration = c(),
+                          explosions = c(),
+                          attacks = c())
+```
+
+
 
 
 ```{r}
@@ -1638,7 +1707,7 @@ PROCESS(data = data_mediation,
 
 ## EDA
 
-```{r Distribution of TD}
+```{r Distribution of TD and ANOMALIES}
 ruggeri_2021 <- read.csv("data/ruggeri_2021.csv")
 
 ruggeri_mean <- mean(ruggeri_2021$score)
@@ -1678,6 +1747,60 @@ ggplot() +
     panel.grid.major.x = element_line(color = "grey90")
   ) +
   guides(fill = guide_legend(title = NULL))
+
+
+dt_anomaly <- dt %>% 
+  select(presbias, absolmag, gainloss,delayspeed)
+
+# Create the data frames
+ruggeri_2021_err <- data.frame(
+  variable = c("presbias", "absolmag", "gainloss", "delayspeed"),
+  mean = c(0.10, 0.20, 0.37, 0.23),
+  se = c(0.02, 0.02, 0.03, 0.03),
+  study = "ruggeri_2021"
+)
+
+dt_anomaly <- data.frame(
+  variable = c("presbias", "absolmag", "gainloss", "delayspeed"),
+  mean = c(0.06, 0.19, 0.40, 0.18),
+  se = c(0.01, 0.01, 0.02, 0.01),
+  study = "dt_anomaly"
+)
+
+# Combine data
+combined_data <- rbind(ruggeri_2021_err, dt_anomaly)
+
+# Calculate the confidence intervals
+combined_data <- combined_data %>%
+  mutate(
+    CI_upper = mean + (1.96 * se),
+    CI_lower = mean - (1.96 * se)
+  )
+
+# Create the ggplot
+ggplot(data = combined_data, aes(y = variable, x = mean, color = study, group = study)) +
+  geom_errorbarh(aes(xmin = CI_lower, xmax = CI_upper), height = 0.2, position = position_dodge(0.4), size = 1.5) +
+  geom_point(position = position_dodge(0.4), size = 4) +
+  scale_y_discrete(labels = c("presbias" = "Present Bias", 
+                              "absolmag" = "Absolute \n Magnitude", 
+                              "gainloss" = "Sign Effect", 
+                              "delayspeed" = "Delay-Speedup \n Asymmetry")) +
+  scale_color_manual(values = c("ruggeri_2021" = "blue", "dt_anomaly" = "red"), 
+                     labels = c("ruggeri_2021" = "Ruggeri (2022)", "dt_anomaly" = "Present Study"), 
+                     name = "") + 
+  theme_minimal() +
+  labs(x = "", y = "", title = "") +
+  theme(
+    text = element_text(family = "Garamond", size = 24),
+    legend.position = c(0.95, 0.95),
+    legend.justification = c(1, 1),
+    legend.background = element_rect(color = "black", fill = "white"),
+    legend.key = element_rect(color = "white"),
+    legend.title = element_blank(),
+    panel.grid.major.x = element_line(color = "grey90")
+  ) +
+  guides(fill = guide_legend(title = NULL))
+
 ```
 
 ```{r INCOME PLOT}
@@ -1844,7 +1967,7 @@ ggplot(data_copy, aes(x = as.factor(demo_age_int))) +
 ########################
 
 
-ggplot(dt, aes(x = as.factor(fwb_expect))) +
+ggplot(dt, aes(x = as.factor(debts_big))) +
   geom_bar() +
   labs(title = "",
        x = "",
@@ -1883,22 +2006,72 @@ count_war <- dt %>% group_by(fwb_war) %>% summarise(n=-n())  # Negative for poin
 ggplot() +
   geom_bar(data=count_expect, aes(x=fwb_expect, y=n, fill="Expected Change"), stat="identity") +
   geom_bar(data=count_war, aes(x=fwb_war, y=n, fill="Actual Change"), stat="identity") +
-  geom_text(data=count_expect, aes(x=fwb_expect, y=n/2, label=n), position=position_dodge(width=0.9)) +
-  geom_text(data=count_war, aes(x=fwb_war, y=n/2, label=-n), position=position_dodge(width=0.9)) +
-  labs(x="Response",
-       y="Count",
+  geom_text(data=count_expect, aes(x=fwb_expect, y=n/2, label=n), position=position_dodge(width=0.9), size = 7, family = "Garamond") +
+  geom_text(data=count_war, aes(x=fwb_war, y=n/2, label=-n), position=position_dodge(width=0.9), size = 7, family = "Garamond") +
+  labs(x="",
+       y="",
        fill="Question",
-       title="Distribution of Financial Wellbeing Responses") +
+       title="") +
   theme_minimal() +
+  theme(text = element_text(family = "Garamond", size = 28),
+        axis.text.x = element_blank(),
+        legend.position = c(0.95, 0.95),
+        legend.justification = c(1, 1),
+        legend.background = element_rect(color = "black", fill = "white"),
+        legend.key = element_rect(color = "white"),
+        legend.title = element_blank(),
+        panel.grid.major.x = element_line(color = "grey90")) +
   coord_flip() +
   scale_fill_manual(values=c("skyblue", "salmon")) +
-  scale_y_continuous(labels=abs)  # Absolute value for y-axis labels
+  scale_y_continuous(labels=abs) + # Absolute value for y-axis labels
+  guides(fill = guide_legend(title = NULL))
 ```
 
 ```{r MH PLOT}
+dt_longer <- dt %>% 
+  pivot_longer(cols = c(feel_sad, feel_calm, feel_energy), 
+               names_to = "variable", 
+               values_to = "value")
 
+colors <- c("0" = "#08306B",   # Deep blue
+            "1" = "#08519C",   # Darker blue
+            "2" = "#2171B5",   # Dark blue
+            "3" = "#4292C6",   # Medium blue
+            "4" = "#6BAED6",   # Light blue
+            "5" = "#BDD7E7")   # Very light blue
+
+ggplot(dt_longer, aes(x = as.factor(value), fill = as.factor(value))) +
+  geom_bar() +
+  scale_fill_manual(values = colors) +  # Specify the colors
+  scale_x_discrete(labels = c("0" = "Always",
+                   "1" = "",
+                   "2" = "",
+                   "3" = "",
+                   "4" = "",
+                   "5" = "Never")) +  # Customize x-axis labels
+  labs(title = "",
+       x = "",
+       y = "# of responders") +
+  geom_text(aes(label = ..count..), 
+            stat = 'count', vjust = -0.5, 
+            color = "black", size = 5, 
+            family = "Garamond") +
+  geom_segment(aes(x = -0.1, y = 0, xend = 7.1, yend = 0), arrow = arrow(type = "closed", ends = "both", angle = 15, length = unit(0.2, "inches"))) +  # adjust y and yend values based on the margin you want below the bars
+  facet_wrap(~ variable, scales = "free_y", ncol = 3, labeller = labeller(variable = c(feel_sad = "Sad", 
+                  feel_calm = "Calm", 
+                  feel_energy = "Energetic"))) +
+  theme_classic() +
+  theme(text = element_text(family = "Garamond", size = 24),
+        plot.caption = element_text(size = 11),
+        plot.title = element_text(hjust = 0.5),
+        axis.line.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.text.y = element_blank(),
+        axis.line.x = element_blank(),   # Remove x-axis line
+        axis.ticks.x = element_blank(),
+        axis.text.x = element_text(vjust = 5),
+        legend.position = "none")  # Add this to remove the legend, if not needed
 ```
-
 
 ```{r OBLAST PLOT}
 ggplot(data_copy, aes(x = geosoc6)) +
@@ -2096,8 +2269,6 @@ final_table
 
 
 ## Ukraine regional map
-
-
 
 ```{r}
 # Survey answers deciphered
