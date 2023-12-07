@@ -14,7 +14,7 @@ editor: visual
 # Setup
 
 ```{r libraries, warning=FALSE, message=FALSE, echo=FALSE}
-# loading packages
+# Create a vector of packages to be loaded
 if (!require("lattice")) install.packages("lattice")
 if (!require("tidyverse")) install.packages("tidyverse")
 if (!require("broom")) install.packages("broom")
@@ -36,42 +36,20 @@ if (!require("hrbrthemes")) install.packages("hrbrthemes")
 if (!require("stargazer")) install.packages("stargazer")
 if (!require("fastDummies")) install.packages("fastDummies")
 if (!require("haven")) install.packages("haven")
+if (!require("sjPlot")) install.packages("sjPlot")
+if (!require("sjmisc")) install.packages("sjmisc")
+if (!require("nlme")) install.packages("nlme")
+if (!require("effects")) install.packages("effects")
+if (!require("mediation")) install.packages("mediation")
+if (!require("rockchalk")) install.packages("rockchalk")
+if (!require("multilevel")) install.packages("multilevel")
+if (!require("bda")) install.packages("bda")
+if (!require("gvlma")) install.packages("gvlma")
+if (!require("QuantPsyc")) install.packages("QuantPsyc")
+if (!require("pequod")) install.packages("pequod")
+if (!require("ggfortify")) install.packages("ggfortify")
+if (!require("car")) install.packages("car")
 
-```
-
-```{r loading data}
-data <- read_sav("data/gradus_data.sav")
-
-colnames(data)[colnames(data) == "intnr"] <- "ResponseId"
-data <- data[, -c(2,41,60)]
-
-
-data_copy <- data %>% 
-  relocate(c(q12, q13), .after = q18) %>% 
-  rename(temp_q17 = "q12",
-         temp_q18 = "q13",
-         temp_q12 = "q14",
-         temp_q13 = "q15",
-         temp_q14 = "q16",
-         temp_q15 = "q17",
-         temp_q16 = "q18") %>% 
-  rename(q17 = "temp_q17",
-         q18 = "temp_q18",
-         q12 = "temp_q12",
-         q13 = "temp_q13",
-         q14 = "temp_q14",
-         q15 = "temp_q15",
-         q16 = "temp_q16")
-
-# Fixing temporal discounting answers 
-
-change_values <- function(x) {
-  x[x == 1] <- 0
-  x[x == 2] <- 1
-  return(x)
-}
-
-data_copy[, c(2:18, 35)] <- lapply(data_copy[, c(2:18, 35)], change_values)
 ```
 
 ```{r functions}
@@ -305,6 +283,110 @@ convert_labelled_to_numeric <- function(variable) {
     return(variable)
   }
 }
+
+# Fixing temporal discounting answers 
+
+change_values <- function(x) {
+  x[x == 1] <- 0
+  x[x == 2] <- 1
+  return(x)
+}
+
+
+# SOURCE: https://cimentadaj.github.io/blog/2016-08-22-producing-stargazer-tables-with-odds-ratios-and-standard-errors-in-r/producing-stargazer-tables-with-odds-ratios-and-standard-errors-in-r/
+stargazer2 <- function(model, odd.ratio = F, ...) {
+  if(!("list" %in% class(model))) model <- list(model)
+    
+  if (odd.ratio) {
+    coefOR2 <- lapply(model, function(x) exp(coef(x)))
+    seOR2 <- lapply(model, function(x) exp(coef(x)) * summary(x)$coef[, 2])
+    p2 <- lapply(model, function(x) summary(x)$coefficients[, 4])
+    stargazer(model, coef = coefOR2, se = seOR2, p = p2, ...)
+    
+  } else {
+    stargazer(model, ...)
+  }
+}
+```
+
+```{r loading data}
+data <- read_sav("data/gradus_data.sav")
+
+colnames(data)[colnames(data) == "intnr"] <- "ResponseId"
+data <- data[, -c(2,41,60)]
+
+data_copy <- data %>% 
+  relocate(c(q12, q13), .after = q18) %>% 
+  rename(temp_q17 = "q12",
+         temp_q18 = "q13",
+         temp_q12 = "q14",
+         temp_q13 = "q15",
+         temp_q14 = "q16",
+         temp_q15 = "q17",
+         temp_q16 = "q18") %>% 
+  rename(q17 = "temp_q17",
+         q18 = "temp_q18",
+         q12 = "temp_q12",
+         q13 = "temp_q13",
+         q14 = "temp_q14",
+         q15 = "temp_q15",
+         q16 = "temp_q16")
+
+
+data_copy[, c(2:18, 35)] <- lapply(data_copy[, c(2:18, 35)], change_values)
+
+air_alarms <- data.frame(
+  City = c("Donetsk", "Kharkiv", "Zaporizhzhia", "Dnipro", "Kyiv", 
+           "Mykolaiv", "Kirovohrad", "Poltava", "Sumy", "Cherkasy", 
+           "Kherson", "Chernihiv", "Odesa", "Zhytomyr", "Vinnytsia", 
+           "Khmelnytskyi", "Volyn", "Rivne", "Ternopil", 
+           "Ivano-Frankivsk", "Lviv", "Chernivtsi", "Zakarpatska", "Luhansk"),
+  Alarms = c(5364, 2789, 2752, 2439, 2189, 2145, 1854, 1633, 1327, 
+             1086, 1027, 984, 947, 888, 728, 606, 510, 496, 460, 
+             427, 426, 378, 353, NA)
+)
+
+# Adjust the city names in air_alarms to match the oblast_before_en in dt
+air_alarms$oblast_before_en <- ifelse(air_alarms$City == "Kyiv", "Kyiv City", paste(air_alarms$City, "Region"))
+
+inflation_data <- data.frame(
+  oblast = c('Україна', 'Вінницька', 'Волинська', 'Дніпропетровська', 'Донецька', 'Житомирська', 
+             'Закарпатська', 'Запорізька', 'Івано-Франківська', 'Київська', 'Кіровоградська', 'Луганська',
+             'Львівська', 'Миколаївська', 'Одеська', 'Полтавська', 'Рівненська', 'Сумська', 'Тернопільська',
+             'Харківська', 'Херсонська', 'Хмельницька', 'Черкаська', 'Чернівецька', 'Чернігівська', 'м.Київ'),
+  jan = c(100.8, 100.4, 100.7, 100.9, 100.8, 101.3, 100.9, 100.9, 101.1, 101.0, 100.8, 100.8, 
+             101.0, 100.8, 101.2, 100.5, 100.7, 100.2, 100.7, 101.4, 99.4, 100.8, 100.5, 100.8, 100.8, 100.6),
+  feb = c(100.7, 100.6, 100.9, 100.6, 100.7, 100.1, 101.1, 100.7, 100.7, 100.2, 100.8, 100.7,
+            101.0, 100.7, 100.7, 100.3, 100.8, 101.1, 100.6, 99.9, 99.9, 100.4, 100.5, 101.0, 100.3, 101.0),
+  mar = c(101.5, 101.2, 101.0, 101.6, 101.5, 101.2, 101.8, 101.6, 101.1, 101.2, 101.5, 101.5, 
+               101.2, 101.9, 101.7, 101.7, 101.1, 101.4, 101.1, 101.9, 101.2, 101.5, 101.3, 101.2, 101.4, 102.4),
+  apr = c(100.2, 99.8, 100.1, 100.4, 100.3, 100.4, 100.0, 100.4, 100.1, 100.3, 100.4, 100.3,
+              99.8, 100.3, 100.4, 100.1, 100.0, 99.8, 99.9, 100.4, 100.4, 100.2, 100.1, 100.3, 100.5, 100.1),
+  may = c(100.5, 100.3, 100.2, 100.1, 100.5, 100.3, 100.2, 100.6, 100.4, 100.4, 100.6, 100.5,
+              100.3, 100.6, 100.3, 100.1, 100.3, 100.4, 100.3, 100.1, 100.9, 100.7, 100.5, 100.3, 99.8, 101.5),
+  jun = c(100.8, 100.8, 101.1, 100.9, 100.8, 101.3, 100.3, 101.2, 101.2, 100.7, 100.5, 100.7,
+              101.1, 100.8, 101.1, 100.3, 100.9, 100.4, 100.6, 100.9, 100.9, 100.7, 100.9, 100.3, 100.4, 100.7),
+  jul = c(99.4, 98.9, 99.3, 99.1, 99.7, 99.0, 99.6, 99.4, 99.1, 99.8, 99.6, 99.6, 98.8, 99.5, 98.9, 99.6, 99.5, 99.2, 99.0, 100.2, 99.7, 99.8, 100.1, 99.1, 99.5, 99.0),
+  aug = c(98.6, 99.4, 99.1, 98.8, 98.4, 99.2, 98.9, 98.8, 98.6, 99.6, 98.9, 98.6, 98.8, 97.8, 98.0, 98.7, 99.0, 98.9, 99.4, 98.2, 98.1, 99.5, 99.4, 98.6, 99.3, 97.5),
+  sep = c(100.5, 101.4, 102.4, 102.4, 102.7, 102.8, 102.8, 103.6, 102.3, 103.2, 103.1, 102.7, 102.0, 102.4, 102.3, 101.3, 102.3, 101.4, 101.6, 103.0, 100.5, 103.6, 103.3, 101.6, 102.0, 102.8),
+  year = c(103.0, 101.4, 102.4, 102.4, 102.7, 102.8, 102.8, 103.6, 102.3, 103.2, 103.1, 102.7, 102.0, 102.4, 102.3, 101.3, 102.3, 101.4, 101.6, 103.0, 100.5, 103.6, 103.3, 101.6, 102.0, 102.8)
+)
+
+# Mapping between Ukrainian names and English names
+mapping <- data.frame(
+  oblast = c('Донецька', 'Харківська', 'Запорізька', 'м.Київ', 'Миколаївська', 
+             'Кіровоградська', 'Полтавська', 'Сумська', 'Черкаська', 'Херсонська', 
+             'Чернігівська', 'Одеська', 'Житомирська', 'Вінницька', 'Хмельницька', 
+             'Волинська', 'Рівненська', 'Тернопільська', 'Івано-Франківська', 'Львівська', 
+             'Чернівецька', 'Луганська', 'Закарпатська', 'Київська', 'Дніпропетровська'),
+  oblast_before_en = c('Donetsk Region', 'Kharkiv Region', 'Zaporizhzhia Region', 'Kyiv City', 
+                       'Mykolaiv Region', 'Kirovohrad Region', 'Poltava Region', 'Sumy Region', 
+                       'Cherkasy Region', 'Kherson Region', 'Chernihiv Region', 'Odesa Region', 
+                       'Zhytomyr Region', 'Vinnytsia Region', 'Khmelnytskyi Region', 'Volyn Region', 
+                       'Rivne Region', 'Ternopil Region', 'Ivano-Frankivsk Region', 'Lviv Region', 
+                       'Chernivtsi Region', 'Luhansk Region', 'Zakarpattia Region', 'Kyiv Region', 
+                       'Dnipropetrovsk Region')
+)
 ```
 
 ```{r data prep}
@@ -676,15 +758,10 @@ data_clean <- data_copy %>%
          -сity_size_moving,
          -city_moving,
          -weight)
-
-# dummies <- model.matrix(~ oblast_before_en - 1, data_clean) %>%
-#   as.data.frame()
-# 
-# # To join the dummy variables back to your original dataset:
-# data_with_dummies <- bind_cols(data_clean, dummies)
 ```
 
 ```{r discounting}
+# Code adapted from (Ruggeri, 2022)
 dat_items <- 
   data_copy[, c(1:18)] %>%
   arrange(ResponseId) %>% 
@@ -833,10 +910,6 @@ dat_unique <- dat_items %>%
   distinct(ResponseId, .keep_all = TRUE) %>% 
   select(-question, -amount_later, -question_num, -block, -choice, -choice_text)
 
-rm(q,scores, presbias, absolmag, gainloss, delayspeed)
-```
-
-```{r data prep}
 dat <- data_clean %>% 
   left_join(dat_unique, by = "ResponseId")
 
@@ -845,23 +918,6 @@ dat <- dat %>%
   mutate(across(everything(), convert_labelled_to_numeric)) %>% 
   mutate(score.c = c(scale(score))) 
 
-```
-
-
-```{r saving data}
-
-# Calculating temporal discounting score and anomalies
-
-writexl::write_xlsx(dt, "survey.xlsx", col_names = TRUE)
-# writexl::write_xlsx(data_clean, "survey_1.xlsx", col_names = TRUE)
-```
-
-
-
-## Analysis
-
-```{r LR test for ordinal variables}
-#treating ordinal data as continuous
 dt <- data_copy[, c(1, 31:34, 37:39)] %>% 
   rename("monthly_inc" = "q21",
          "monthly_house_inc" = "q21_1",
@@ -921,35 +977,45 @@ dt$monthly_inc <- dt$monthly_inc %>%
   })
 dt$fin_safety <- rowSums(dt[,c(9:15,47:53)])
 
-mod_ord_test1 <- lm(score.c ~ monthly_inc + fwb_expect + fwb_war + debts, data = dt)
+rm(q,scores, presbias, absolmag, gainloss, delayspeed)
+```
+
+```{r saving data}
+# Calculating temporal discounting score and anomalies
+writexl::write_xlsx(dt, "survey.xlsx", col_names = TRUE)
+```
+
+# Analysis
+
+```{r LR test for ordinal variables}
+#treating ordinal data as continuous
+mod_ord_test1 <- lm(score.c ~ monthly_inc + fwb_expect + fwb_war, data = filter(dt, !is.na(monthly_inc)))
 mod_ord_test2 <- lm(score.c ~ 
                       inc_5 + inc_20 + inc_40 + inc_60 + inc_80 + inc_100 + 
                       expect_much_better + expect_better + expect_worse + expect_much_worse + 
-                      change_much_better + change_better + change_worse + change_much_worse + 
-                      debts, data = dt)
+                      change_much_better + change_better + change_worse + change_much_worse, data = filter(dt, !is.na(monthly_inc)))
+
+
 mod_ord_test3 <- lm(score.c ~ monthly_inc + monthly_house_inc + debts + fwb_expect + fwb_war + 
                       inc_5 + inc_20 + inc_40 + inc_60 + inc_80 + inc_100 +
                       expect_much_better + expect_better + expect_worse + expect_much_worse + 
-                      change_much_better + change_better + change_worse + change_much_worse + 
-                      debts, data = dt)
+                      change_much_better + change_better + change_worse + change_much_worse, data = filter(dt, !is.na(monthly_inc)))
 
 stargazer(mod_ord_test1,
           mod_ord_test2,
-          mod_ord_test3,          
           header=FALSE,
           type='text', 
           digits=3,
           font.size = "normalsize",
           align = TRUE,
-          omit.stat=c("f", "ser"),
+          omit.stat=c("ser"),
           column.sep.width = "-25pt")
 
 (A <- logLik(mod_ord_test1))
 (B <- logLik(mod_ord_test2))
 (teststat <- -2 * (as.numeric(A)-as.numeric(B)))
-# df=23-7=16
-(p.val <- pchisq(teststat, df = 16, lower.tail = FALSE))
-
+# df=16-5=11
+(p.val <- pchisq(teststat, df = 10, lower.tail = FALSE))
 
 mod_ord_test4 <- lm(score.c ~ feel_calm + feel_energy + feel_sad, data = dt)
 mod_ord_test5 <- lm(score.c ~ 
@@ -965,13 +1031,12 @@ mod_ord_test6 <- lm(score.c ~
 
 stargazer(mod_ord_test4,
           mod_ord_test5,
-          mod_ord_test6,          
           header=FALSE,
           type='text', 
           digits=3,
           font.size = "normalsize",
           align = TRUE,
-          omit.stat=c("f", "ser"),
+          omit.stat=c("ser"),
           column.sep.width = "-25pt")
 
 (A2 <- logLik(mod_ord_test4))
@@ -982,94 +1047,23 @@ stargazer(mod_ord_test4,
 
 ```
 
-```{r}
-#####
-# library(doBy)
-# summaryBy(fwb_war ~ debts, data = dt,
-#   FUN = function(x) {
-# c(m = mean(x), s = sd(x))
-# } )
-####
-```
-
 # Mediation Analysis
 
 ```{r}
-require(mediation) #Mediation package
-require(rockchalk) #Graphing simple slopes; moderation
-require(multilevel) #Sobel Test
-require(bda) #Another Sobel Test option
-require(gvlma) #Testing Model Assumptions 
-require(QuantPsyc)
-require(pequod)
-```
-
-```{r ML}
-# 1. Data Preparation
-library(caret)
 
 
-
-set.seed(123) # for reproducibility
-data_ml <- dt[,-c(1,3,9:15,17,26,32:43,46:123,125)]
-trainIndex <- createDataPartition(data_ml$score.c, p = 0.7, list = FALSE)
-trainData <- data_ml[trainIndex, ]
-testData <- data_ml[-trainIndex, ]
-
-# Load the necessary library
-library(MASS)
-
-# Start with a model with no predictors
-model.null <- lm(score.c ~ 1, data=trainData)
-
-# Use the step function for forward selection
-model.forward <- step(model.null, direction="forward",
-                      scope=list(lower=model.null, upper=lm(score.c ~ ., data=trainData)),
-                      test="F")
-
-
-model.full <- lm(score.c ~ .^2, data=trainData) # This considers all main effects and two-way interactions
-
-stargazer(model.full,
-          header=FALSE,
-          type='text', 
-          digits=3,
-          font.size = "normalsize",
-          align = TRUE,
-          omit.stat=c("ser"),
-          column.sep.width = "-25pt")
-
-model.selected <- step(model.null, scope=list(lower=model.null, upper=model.full), direction="both", test="F")
-
-stargazer(model.selected,
-          header=FALSE,
-          type='text', 
-          digits=3,
-          font.size = "normalsize",
-          align = TRUE,
-          omit.stat=c("ser"),
-          column.sep.width = "-25pt")
-```
-
-
-```{r, warning=FALSE, message=FALSE, echo=FALSE}
-data_mediation <- dt[, c(3:11,20:31,33:37,41,43,46,47,50,63:67,117)]
-# 
-#data_mediation <- data_mediation %>%  
-#   mutate(across(everything(), convert_labelled_to_numeric)) %>% 
-#   mutate(score.c = c(scale(score))) 
-# 
-# #Which mediators correlated with one another?
-# corr_med <- data_mediation %>% 
-#   select(fwb_war, fwb_expect, fwb_debts, mh_sad, mh_energy, mh_calm) %>% 
-#   cor()
-# 
-# corrplot(corr_med, method="number", type="upper")
-# corrplot::cor.mtest(corr_med, conf.level = 0.95)
-# p.mat
 ```
 
 ```{r TD ~ FULL}
+# Add the oblast_before_en column to the data table
+pre_join_data <- merge(inflation_data, mapping, by = "oblast", all.x = TRUE)
+
+# Perform the right join
+joined_data <- right_join(air_alarms, dt, by = "oblast_before_en")
+
+# Right join with joined_data
+result <- merge(joined_data, pre_join_data, by = "oblast_before_en", all.y = TRUE)
+
 full_score <- lm(score.c ~ ., data = dt[,-c(1,3,9:15,17,26,32:43,46:123,125)])
 
 full_pres <- glm(presbias ~ ., data = dt[,-c(1,28:36,39,48:90,105:111,112,114:117)], family = binomial("logit"))
@@ -1126,49 +1120,44 @@ p <- ggplot(results_war1, aes(x = estimate, y = reorder(term, estimate))) +
 
 
 p
-
-
-if(!require(ggfortify)) install.packages("ggfortify")
-
-library(ggfortify)
-
-autoplot(full_score, which = 1:4)
-
-
-
-
-
-library(car)
-#create vector of VIF values
-vif_values <- vif(mod_score)
-
-#create horizontal bar chart to display each VIF value
-barplot(vif_values, main = "VIF Values", horiz = TRUE, col = "steelblue")
-
-#add vertical line at 5
-abline(v = 5, lwd = 3, lty = 2)
 ```
 
 ```{r TD ~ War}
 #Which aspect of war is highly associated with TD?
-mod_score <- lm(score.c ~ occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + no_effect + region_war + age + gender, data = dt)
+mod_score <- lm(score.c ~ occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + region_war + age + gender, data = dt)
 
-mod_pres <- glm(presbias ~ occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + no_effect + region_war +  age + gender, data = dt, family = binomial("logit"))
 
-mod_absol <- glm(absolmag ~ occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + no_effect + region_war + age + gender, data = dt, family = binomial("logit"))
+mod_pres <- glm(presbias ~ occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + region_war +  age + gender, data = dt, family = binomial("logit"))
 
-mod_gain <- glm(gainloss ~ occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + no_effect + region_war + age + gender, data = dt, family = binomial("logit"))
+mod_absol <- glm(absolmag ~ occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + region_war + age + gender, data = dt, family = binomial("logit"))
 
-mod_delay <- glm(delayspeed ~ occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + no_effect + region_war + age + gender, data = dt, family = binomial("logit"))
 
-stargazer(mod_score, mod_pres, mod_absol, mod_gain, mod_delay,
-          header=FALSE,
-          type='text', 
-          digits=3,
-          font.size = "normalsize",
-          align = TRUE,
-          omit.stat=c("ser"),
-          column.sep.width = "-25pt")
+mod_gain <- glm(gainloss ~ occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + region_war + age + gender, data = dt, family = binomial("logit"))
+
+mod_delay <- glm(delayspeed ~ occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + region_war + age + gender, data = dt, family = binomial("logit"))
+
+
+# Select relevant columns
+selected_cols <- c("score.c", "occupation", "bombing", "prop_dmg", "phys_viol", "emo_viol", "robbery", 
+                   "fam_afu", "fam_death", "phys_injury", "depression", "confid_loss", "insom", "region_war", "age", "gender")
+dt_selected <- dt[, selected_cols]
+
+# Identify numeric columns, excluding 'score.c'
+numeric_cols <- sapply(dt_selected, is.numeric) & names(dt_selected) != "score.c"
+
+# Standardize only the numeric columns
+dt_numeric_standardized <- scale(dt_selected[, numeric_cols])
+
+# Combine standardized predictors with non-standardized ones
+dt_standardized <- as.data.frame(cbind(score.c = dt_selected$score.c, dt_numeric_standardized, dt_selected[, !numeric_cols]))
+
+# Fit the regression model with standardized dataset
+mod_score_standardized <- lm(score.c ~ ., data = dt_standardized)
+
+
+
+plot(fitted(mod_score), residuals(mod_score), main="Residuals vs Fitted", xlab="Fitted values", ylab="Residuals")
+abline(h = 0, lty = 2)
 
 # Get tidy results with confidence intervals
 results_war <- tidy(mod_score, conf.int = TRUE) %>%
@@ -1205,8 +1194,20 @@ ggplot(results_war, aes(x = estimate, y = reorder(term, estimate))) +
   )
 ```
 
+```{r robust WAR}
+robust_score <- lm(score.c ~ year + Alarms + occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + no_effect + region_war + age + gender, data = result)
+
+stargazer(robust_score, mod_score,
+          header=FALSE,
+          type='text', 
+          digits=3,
+          font.size = "normalsize",
+          align = TRUE,
+          column.sep.width = "-25pt")
+```
+
 ```{r TD ~ Intensity*Debts}
-mod_int_debt <- lm(score.c ~ intensity + intensity*debts_small + intensity*debts_medium, data = dt)
+mod_int_debt <- lm(score.c ~ intensity, data = dt)
 
 stargazer(mod_int_debt,
           header=FALSE,
@@ -1217,8 +1218,6 @@ stargazer(mod_int_debt,
           omit.stat=c("f", "ser"),
           column.sep.width = "-25pt")
 ```
-
-
 
 ```{r TD ~ War|Kids}
 test_no_kids <- lm(score.c ~ intensity + occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + no_effect + region_war + age + gender, subset(dt, no_kids == 1))
@@ -1236,19 +1235,133 @@ stargazer(test_no_kids,
           column.sep.width = "-25pt")
 ```
 
-```{r TD ~ War|Region}
-war_td <- lm(score.c ~ intensity + occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + no_effect + age + gender, data = subset(dt, region_war == 1))
+```{r TD ~ War|Interaction}
+i_reg_war <- lm(score.c ~ (occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom)*region_war + age + gender, data = result)
 
-no_war_td <- lm(score.c ~ intensity + occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + no_effect +  age + gender, data = subset(dt, region_war == 0))
+i_age <- lm(score.c ~ (occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom)*age + gender, data = result)
 
-stargazer(war_td, no_war_td,
+i_debts <- lm(score.c ~ (occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom)*debts + gender, data = result)
+
+i_kids <- lm(score.c ~ (occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom)*no_kids + gender, data = result)
+
+i_fin_saf <- lm(score.c ~ (occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom)*fin_safety + gender, data = result)
+
+i_gender <- lm(score.c ~ (occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom)* gender + age, data = result)
+
+i_fwb_war <- lm(score.c ~ (occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death)*fwb_war + gender + age, data = result)
+
+i_fwb_expect <- lm(score.c ~ (occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death)*fwb_expect + gender + age, data = result)
+
+i_feel_sad <- lm(score.c ~ (occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom)*feel_sad + gender + age, data = result)
+
+i_confid <- lm(score.c ~ (occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + depression + confid_loss + insom)*Alarms + gender + age, data = result)
+
+stargazer(i_confid,
           header=FALSE,
           type='text', 
           digits=3,
           font.size = "normalsize",
           align = TRUE,
-          omit.stat=c("f", "ser"),
+          omit.stat=c("ser"),
           column.sep.width = "-25pt")
+
+
+
+
+colors <- c("navy", "salmon")  # Light blue for Female and Light coral for Male
+
+# Create the initial plot
+p4 <- plot_model(i_gender, type = "pred", terms = c("bombing", "gender"))
+
+y_lims <- ggplot_build(p4)$layout$panel_params[[1]]$y.range
+
+bombing_plot <- p4 +
+  scale_color_manual(values = c("blue", "red"), 
+                     name = "Bombinge", 
+                     breaks = c(0, 1),
+                     labels = c("Female", "Male")) +
+  labs(title = NULL, 
+       y = "Score", 
+       x = "Bombing") +
+  theme_minimal() +
+  theme(text = element_text(family = "Garamond", size = 28),
+        axis.text.y = element_text(angle = 90, hjust = 0.5),
+        legend.position = c(0.35, 0.95),
+        legend.justification = c(1, 1),
+        legend.background = element_rect(color = "black", fill = "white"),
+        legend.key = element_rect(color = "white"),
+        legend.title = element_blank(),
+        panel.grid.major.x = element_line(color = "grey90")) +
+  scale_y_continuous(breaks = c(-0.25, 0.25),
+                     labels = c("More patient", "Less patient")) +
+  theme(axis.line.y = element_blank(),
+        axis.ticks.y = element_blank()) +
+  geom_segment(aes(x = 0, xend = 0, y = min(y_lims), yend = max(y_lims)), color = "black") +
+  annotate("segment", x = 0, xend = 0, y = min(y_lims), yend = min(y_lims) - 0.1, 
+           arrow = arrow(type = "closed", length = unit(0.2, "inches"))) +
+  annotate("segment", x = 0, xend = 0, y = max(y_lims), yend = max(y_lims) + 0.1, 
+           arrow = arrow(type = "closed", length = unit(0.2, "inches")))
+
+
+prop_dmg_plot <- plot_model(i_gender, type = "pred", terms = c("prop_dmg", "gender")) + 
+  scale_color_manual(values = colors, 
+                     name = "Gender", 
+                     breaks = c(0, 1),
+                     labels = c("Female", "Male")) +
+  labs(title = NULL, 
+       y = "Score", 
+       x = "Property damage") +
+  scale_x_continuous(breaks = c(0, 1)) +
+  theme_minimal() +
+  theme(text = element_text(family = "Garamond", size = 28),
+        axis.text.y = element_text(angle = 90, hjust = 0.5),
+        legend.position = c(0.3, 0.95),
+        legend.justification = c(1, 1),
+        legend.background = element_rect(color = "black", fill = "white"),
+        legend.key = element_rect(color = colors),
+        legend.title = element_blank(),
+        panel.grid.major.x = element_line(color = "grey90")) +
+  scale_y_continuous(breaks = c(-0.4, 0.4),
+                     labels = c("More patient", "Less patient")) +
+  theme(axis.line.y = element_blank(),
+        axis.ticks.y = element_blank()) +
+  geom_segment(aes(x = 0, xend = 0, y = min(y_lims), yend = max(y_lims)), color = "black") +
+  annotate("segment", x = 0, xend = 0, y = min(y_lims), yend = min(y_lims) - 0.1, 
+           arrow = arrow(type = "closed", length = unit(0.2, "inches"))) +
+  annotate("segment", x = 0, xend = 0, y = max(y_lims), yend = max(y_lims) + 0.1, 
+           arrow = arrow(type = "closed", length = unit(0.2, "inches")))
+
+fam_death_plot <- plot_model(i_gender, type = "pred", terms = c("fam_death", "gender")) + 
+  scale_color_manual(values = colors, 
+                     name = "Gender", 
+                     breaks = c(0, 1),
+                     labels = c("Female", "Male")) +
+  labs(title = NULL, 
+       y = "", 
+       x = "Family death") +
+  scale_x_continuous(breaks = c(0, 1)) +
+  theme_minimal() +
+  theme(text = element_text(family = "Garamond", size = 28),
+        axis.text.y = element_blank(),
+        legend.position = "none",
+        panel.grid.major.x = element_line(color = "grey90")) +
+  theme(axis.line.y = element_blank(),
+        axis.ticks.y = element_blank())
+
+# Change the SE color to a darker version of our colors
+se_colors <- scales::alpha(colors, 0.9)
+
+# Modify prop_dmg_plot
+prop_dmg_plot <- prop_dmg_plot +
+  scale_fill_manual(values = se_colors) +
+  guides(fill = FALSE) # Hide the fill legend if it gets generated
+
+# Modify fam_death_plot
+fam_death_plot <- fam_death_plot +
+  scale_fill_manual(values = se_colors) +
+  guides(fill = FALSE) # Hide the fill legend if it gets generated
+
+(prop_dmg_plot + fam_death_plot)
 ```
 
 ```{r TD ~ FWB}
@@ -1311,7 +1424,6 @@ ggplot(results_fwb, aes(x = estimate, y = reorder(term, estimate))) +
   )
 ```
 
-
 ```{r TD ~ FWB*MH}
 mod_fwbmh <- lm(score.c ~ no_kids + no_kids*fwb_war, dt)
 
@@ -1324,7 +1436,6 @@ stargazer(mod_fwbmh,
            omit.stat=c("ser"),
            column.sep.width = "-25pt")
 ```
-
 
 ```{r TD ~ FWB|Kids}
 fwb_no_kids <- lm(score.c ~ monthly_inc + monthly_house_inc + fwb_expect + fwb_war + debts, subset(dt, no_kids == 1))
@@ -1460,8 +1571,6 @@ stargazer(mod_kid_td,
           column.sep.width = "-25pt")
 ```
 
-
-
 ```{r TD ~ MISC1}
 mod_m1_td <- lm(score.c ~ stayed_city + left_came_back + left_no_come_back + left_within_oblast + left_other_oblast + left_abroad, dt)
 
@@ -1539,984 +1648,843 @@ stargazer(income_td,
           column.sep.width = "-25pt")
 ```
 
-```{r TD ~ Region}
-# code up untill this point
-```
-
-```{r robust checks}
-sirens <- read.csv("data/official_data_en.csv")
-temp <- sirens$oblast[17]
-sirens$oblast[17] <- sirens$raion[17]
-sirens$raion[17] <- temp
-
-sirens$started_at <- as.POSIXct(sirens$started_at, format="%Y-%m-%d %H:%M:%S")
-sirens$finished_at <- as.POSIXct(sirens$finished_at, format="%Y-%m-%d %H:%M:%S")
-sirens$duration_hours <- as.numeric(difftime(sirens$finished_at, sirens$started_at, units="hours"))
-summary_sirens <- sirens %>%
-  group_by(oblast) %>%
-  summarise(
-    total_sirens = n(),
-    total_duration_hours = sum(duration_hours)
-  )
-
-kse_data <- read.csv("data/geography.csv")
-
-#https://air-alarms.in.ua/en?from=2022-02-24&to=2023-09-26#statistic
-sirens_data <- data.frame(oblast = c("Вінницька", "Волинська", "Дніпропетровська", "Донецька", "Житомирська", "Закарпатська", "Запорізька", "Івано-Франківська", "Київська", "Кіровоградська", "Луганська", "Львівська", "м. Київ", "Миколаївська", "Одеська", "Полтавська", "Рівненська", "Сумська", "Тернопільська", "Харківська", "Херсонська", "Хмельницька", "Черкаська", "Чернівецька", "Чернігівська"),
-                          sirens_count = c(),
-                          sirens_duration = c(),
-                          explosions = c(),
-                          attacks = c())
-```
-
-
-
-
 ```{r}
-# Low R^2 and majority are insignificant
+# Occupation 
+occ_full <- lm(score.c ~ occupation + fwb_war + fwb_expect + feel_sad + feel_energy + feel_calm + monthly_inc + region_war + gender + fin_safety + debts + age, data = dt)
 
+occ_1 <- lm(fwb_war ~ occupation + monthly_inc + region_war + gender + fin_safety + debts + age, data = dt)
 
-#WAR-MH-TD
+occ_2 <- lm(fwb_expect ~ occupation + monthly_inc + region_war + gender + fin_safety + debts + age, data = dt)
 
-#STEP 1
-#1. Direct Effect (War on TD)
-mod_war_td <- lm(score.c ~ evacuate, data = data_mediation)
+occ_4 <- lm(feel_sad ~ occupation + monthly_inc + region_war + gender + fin_safety + debts + age, data = dt)
 
-#2.1 Path A (War on MH)
-mod_war_mh <- lm(feel_sad ~ evacuate, data = data_mediation)
+occ_5 <- lm(feel_energy ~ occupation + monthly_inc + region_war + gender + fin_safety + debts + age, data = dt)
 
-#3.1 Path B (MH on TD, controlling for War)
-mod_mh_td <- lm(score.c ~ feel_sad, data = data_mediation)
+occ_6 <- lm(feel_calm ~ occupation + monthly_inc + region_war + gender + fin_safety + debts + age, data = dt)
 
-#4.1 Total
-mod_total_mh <- lm(score.c ~ feel_sad + evacuate, data = data_mediation)
-
-stargazer(mod_war_td, mod_war_mh, mod_mh_td,mod_total_mh,
+stargazer(occ_full, 
+          occ_1, 
+          occ_2,
+          occ_4,
+          occ_5,
+          occ_6,
           header=FALSE,
           type='text', 
           digits=3,
           font.size = "normalsize",
           align = TRUE,
-          omit.stat=c("f", "ser"),
+          omit.stat=c("ser"),
           column.sep.width = "-25pt")
 
-#1.1 Direct
-mod_war_td <- lm(score ~ evacuate, data = data_mediation)
+#Direct effect
+direct_effect <- coef(occ_full)["occupation"]
+direct_se <- summary(occ_full)$coefficients["occupation", "Std. Error"]
+direct_pvalue <- summary(occ_full)$coefficients["occupation", "Pr(>|t|)"]
+direct_ci_low <- direct_effect - 1.96 * direct_se
+direct_ci_high <- direct_effect + 1.96 * direct_se
 
-#2.2 Path C (War on FWB)
-mod_war_fwb <- lm(fwb_war ~ evacuate, data = data_mediation)
+# Calculate Indirect Effects and their standard errors
+indirect_effects <- c(
+  coef(occ_1)["occupation"] * coef(occ_full)["fwb_war"],
+  coef(occ_2)["occupation"] * coef(occ_full)["fwb_expect"],
+  coef(occ_4)["occupation"] * coef(occ_full)["feel_sad"],
+  coef(occ_5)["occupation"] * coef(occ_full)["feel_energy"],
+  coef(occ_6)["occupation"] * coef(occ_full)["feel_calm"]
+)
 
-#3.2 Path D (FWB on TD, controlling for War)
-mod_fwb_td <- lm(score ~ fwb_war, data = data_mediation)
+indirect_se <- sqrt(
+  (coef(occ_1)["occupation"]^2 * summary(occ_full)$coefficients["fwb_war", "Std. Error"]^2) +
+  (coef(occ_full)["fwb_war"]^2 * summary(occ_1)$coefficients["occupation", "Std. Error"]^2) +
+  (coef(occ_2)["occupation"]^2 * summary(occ_full)$coefficients["fwb_expect", "Std. Error"]^2) +
+  (coef(occ_full)["fwb_expect"]^2 * summary(occ_2)$coefficients["occupation", "Std. Error"]^2) +
+  (coef(occ_4)["occupation"]^2 * summary(occ_full)$coefficients["feel_sad", "Std. Error"]^2) +
+  (coef(occ_full)["feel_sad"]^2 * summary(occ_4)$coefficients["occupation", "Std. Error"]^2) +
+  (coef(occ_5)["occupation"]^2 * summary(occ_full)$coefficients["feel_energy", "Std. Error"]^2) +
+  (coef(occ_full)["feel_energy"]^2 * summary(occ_5)$coefficients["occupation", "Std. Error"]^2) +
+  (coef(occ_6)["occupation"]^2 * summary(occ_full)$coefficients["feel_calm", "Std. Error"]^2) +
+  (coef(occ_full)["feel_calm"]^2 * summary(occ_6)$coefficients["occupation", "Std. Error"]^2)
+)
 
-#4.1 Total 
-mod_total_fwb <- lm(score ~ fwb_war + evacuate, data = data_mediation)
+# Assuming normal distribution for the indirect effect
+indirect_effect <- sum(indirect_effects)
+indirect_pvalue <- 2 * (1 - pnorm(abs(indirect_effect / indirect_se)))
+indirect_ci_low <- indirect_effect - 1.96 * indirect_se
+indirect_ci_high <- indirect_effect + 1.96 * indirect_se
 
-stargazer(mod_war_td, mod_war_fwb, mod_fwb_td,mod_total_fwb,
+# Compile results
+results <- data.frame(
+  Effect = c("Direct", "Indirect"),
+  Estimate = c(direct_effect, indirect_effect),
+  Std.Error = c(direct_se, indirect_se),
+  P.Value = c(direct_pvalue, indirect_pvalue),
+  CI.Lower = c(direct_ci_low, indirect_ci_low),
+  CI.Upper = c(direct_ci_high, indirect_ci_high)
+)
+results
+```
+
+```{r}
+# Prop damage 
+prop_full <- lm(score.c ~ prop_dmg + fwb_war + fwb_expect + feel_sad + feel_energy + feel_calm + monthly_inc + region_war + gender + fin_safety + debts + age, data = dt)
+
+prop_1 <- lm(fwb_war ~ prop_dmg + monthly_inc + region_war + gender + fin_safety + debts + age, data = dt)
+
+prop_2 <- lm(fwb_expect ~ prop_dmg + monthly_inc + region_war + gender + fin_safety + debts + age, data = dt)
+
+prop_4 <- lm(feel_sad ~ prop_dmg + monthly_inc + region_war + gender + fin_safety + debts + age, data = dt)
+
+prop_5 <- lm(feel_energy ~ prop_dmg + monthly_inc + region_war + gender + fin_safety + debts + age, data = dt)
+
+prop_6 <- lm(feel_calm ~ prop_dmg + monthly_inc + region_war + gender + fin_safety + debts + age, data = dt)
+
+stargazer(prop_full, 
+          prop_1, 
+          prop_2,
+          prop_4,
+          prop_5,
+          prop_6,
           header=FALSE,
           type='text', 
           digits=3,
           font.size = "normalsize",
           align = TRUE,
-          omit.stat=c("f", "ser"),
+          omit.stat=c("ser"),
           column.sep.width = "-25pt")
 
+# Direct Effect
+direct_effect_prop <- coef(prop_full)["prop_dmg"]
+direct_se_prop <- summary(prop_full)$coefficients["prop_dmg", "Std. Error"]
+direct_pvalue_prop <- summary(prop_full)$coefficients["prop_dmg", "Pr(>|t|)"]
+direct_ci_low_prop <- direct_effect_prop - 1.96 * direct_se_prop
+direct_ci_high_prop <- direct_effect_prop + 1.96 * direct_se_prop
 
-#Path A
-sobel(data_mediation$War, data_mediation$MH, data_mediation$score)
+# Indirect Effects for Each Mediator
 
-#Path B
-sobel(data_mediation$War, data_mediation$FWB, data_mediation$score)
+indirect_effects_prop <- c(
+  coef(prop_1)["prop_dmg"] * coef(prop_full)["fwb_war"],
+  coef(prop_2)["prop_dmg"] * coef(prop_full)["fwb_expect"],
+  coef(prop_4)["prop_dmg"] * coef(prop_full)["feel_sad"],
+  coef(prop_5)["prop_dmg"] * coef(prop_full)["feel_energy"],
+  coef(prop_6)["prop_dmg"] * coef(prop_full)["feel_calm"]
+)
+
+# Standard error of indirect effect
+indirect_se_prop <- sqrt(
+  (coef(prop_1)["prop_dmg"]^2 * summary(prop_full)$coefficients["fwb_war", "Std. Error"]^2) +
+  (coef(prop_full)["fwb_war"]^2 * summary(prop_1)$coefficients["prop_dmg", "Std. Error"]^2) +
+  (coef(prop_2)["prop_dmg"]^2 * summary(prop_full)$coefficients["fwb_expect", "Std. Error"]^2) +
+  (coef(prop_full)["fwb_expect"]^2 * summary(prop_2)$coefficients["prop_dmg", "Std. Error"]^2) +
+  (coef(prop_4)["prop_dmg"]^2 * summary(prop_full)$coefficients["feel_sad", "Std. Error"]^2) +
+  (coef(prop_full)["feel_sad"]^2 * summary(prop_4)$coefficients["prop_dmg", "Std. Error"]^2) +
+  (coef(prop_5)["prop_dmg"]^2 * summary(prop_full)$coefficients["feel_energy", "Std. Error"]^2) +
+  (coef(prop_full)["feel_energy"]^2 * summary(prop_5)$coefficients["prop_dmg", "Std. Error"]^2) +
+  (coef(prop_6)["prop_dmg"]^2 * summary(prop_full)$coefficients["feel_calm", "Std. Error"]^2) +
+  (coef(prop_full)["feel_calm"]^2 * summary(prop_6)$coefficients["prop_dmg", "Std. Error"]^2)
+)
+
+# Assuming normal distribution for the indirect effect
+indirect_effect_prop <- sum(indirect_effects_prop)
+indirect_pvalue_prop <- 2 * (1 - pnorm(abs(indirect_effect_prop / indirect_se_prop)))
+indirect_ci_low_prop <- indirect_effect_prop - 1.96 * indirect_se_prop
+indirect_ci_high_prop <- indirect_effect_prop + 1.96 * indirect_se_prop
+
+# Compile results for prop_dmg
+results_prop <- data.frame(
+  Effect = c("Direct", "Indirect"),
+  Estimate = c(direct_effect_prop, indirect_effect_prop),
+  Std.Error = c(direct_se_prop, indirect_se_prop),
+  P.Value = c(direct_pvalue_prop, indirect_pvalue_prop),
+  CI.Lower = c(direct_ci_low_prop, indirect_ci_low_prop),
+  CI.Upper = c(direct_ci_high_prop, indirect_ci_high_prop)
+)
+
+results_prop
 ```
 
+```{r}
+# Bombing 
+bom_full <- lm(score.c ~ bombing + fwb_war + fwb_expect + feel_sad + feel_energy + feel_calm + monthly_inc + region_war + gender + fin_safety + debts + age, data = dt)
+
+bom_1 <- lm(fwb_war ~ bombing + monthly_inc + region_war + gender + fin_safety + debts + age, data = dt)
+
+bom_2 <- lm(fwb_expect ~ bombing + monthly_inc + region_war + gender + fin_safety + debts + age, data = dt)
+
+bom_4 <- lm(feel_sad ~ bombing + monthly_inc + region_war + gender + fin_safety + debts + age, data = dt)
+
+bom_5 <- lm(feel_energy ~ bombing + monthly_inc + region_war + gender + fin_safety + debts + age, data = dt)
+
+bom_6 <- lm(feel_calm ~ bombing + monthly_inc + region_war + gender + fin_safety + debts + age, data = dt)
+
+stargazer(bom_full, 
+          bom_1, 
+          bom_2,
+          bom_4,
+          bom_5,
+          bom_6,
+          header=FALSE,
+          type='text', 
+          digits=3,
+          font.size = "normalsize",
+          align = TRUE,
+          omit.stat=c("ser"),
+          column.sep.width = "-25pt")
+
+# Direct Effect for bombing
+direct_effect_bom <- coef(bom_full)["bombing"]
+direct_se_bom <- summary(bom_full)$coefficients["bombing", "Std. Error"]
+direct_pvalue_bom <- summary(bom_full)$coefficients["bombing", "Pr(>|t|)"]
+direct_ci_low_bom <- direct_effect_bom - 1.96 * direct_se_bom
+direct_ci_high_bom <- direct_effect_bom + 1.96 * direct_se_bom
+
+# Indirect Effects for Each Mediator
+
+indirect_effects_bom <- c(
+  coef(bom_1)["bombing"] * coef(bom_full)["fwb_war"],
+  coef(bom_2)["bombing"] * coef(bom_full)["fwb_expect"],
+  coef(bom_4)["bombing"] * coef(bom_full)["feel_sad"],
+  coef(bom_5)["bombing"] * coef(bom_full)["feel_energy"],
+  coef(bom_6)["bombing"] * coef(bom_full)["feel_calm"]
+)
+
+# Standard error of indirect effect
+indirect_se_bom <- sqrt(
+  (coef(bom_1)["bombing"]^2 * summary(bom_full)$coefficients["fwb_war", "Std. Error"]^2) +
+  (coef(bom_full)["fwb_war"]^2 * summary(bom_1)$coefficients["bombing", "Std. Error"]^2) +
+  (coef(bom_2)["bombing"]^2 * summary(bom_full)$coefficients["fwb_expect", "Std. Error"]^2) +
+  (coef(bom_full)["fwb_expect"]^2 * summary(bom_2)$coefficients["bombing", "Std. Error"]^2) +
+  (coef(bom_4)["bombing"]^2 * summary(bom_full)$coefficients["feel_sad", "Std. Error"]^2) +
+  (coef(bom_full)["feel_sad"]^2 * summary(bom_4)$coefficients["bombing", "Std. Error"]^2) +
+  (coef(bom_5)["bombing"]^2 * summary(bom_full)$coefficients["feel_energy", "Std. Error"]^2) +
+  (coef(bom_full)["feel_energy"]^2 * summary(bom_5)$coefficients["bombing", "Std. Error"]^2) +
+  (coef(bom_6)["bombing"]^2 * summary(bom_full)$coefficients["feel_calm", "Std. Error"]^2) +
+  (coef(bom_full)["feel_calm"]^2 * summary(bom_6)$coefficients["bombing", "Std. Error"]^2)
+)
+
+# Assuming normal distribution for the indirect effect
+indirect_effect_bom <- sum(indirect_effects_bom)
+indirect_pvalue_bom <- 2 * (1 - pnorm(abs(indirect_effect_bom / indirect_se_bom)))
+indirect_ci_low_bom <- indirect_effect_bom - 1.96 * indirect_se_bom
+indirect_ci_high_bom <- indirect_effect_bom + 1.96 * indirect_se_bom
+
+# Compile results for bombing
+results_bom <- data.frame(
+  Effect = c("Direct", "Indirect"),
+  Estimate = c(direct_effect_bom, indirect_effect_bom),
+  Std.Error = c(direct_se_bom, indirect_se_bom),
+  P.Value = c(direct_pvalue_bom, indirect_pvalue_bom),
+  CI.Lower = c(direct_ci_low_bom, indirect_ci_low_bom),
+  CI.Upper = c(direct_ci_high_bom, indirect_ci_high_bom)
+)
+
+results_bom
+```
 
 ```{r}
-data_med_copy <- data_mediation
+# Phys violence 
+phys_full <- lm(score.c ~ phys_viol + fwb_war + fwb_expect + feel_sad + feel_energy + feel_calm + monthly_inc + region_war + gender + fin_safety + debts + age, data = dt)
 
-convert_labelled_to_numeric <- function(variable) {
-  if (inherits(variable, "haven_labelled")) {
-    return(as.numeric(as.character(variable)))
+phys_1 <- lm(fwb_war ~ phys_viol + monthly_inc + region_war + gender + fin_safety + debts + age, data = dt)
+
+phys_2 <- lm(fwb_expect ~ phys_viol + monthly_inc + region_war + gender + fin_safety + debts + age, data = dt)
+
+phys_4 <- lm(feel_sad ~ phys_viol + monthly_inc + region_war + gender + fin_safety + debts + age, data = dt)
+
+phys_5 <- lm(feel_energy ~ phys_viol + monthly_inc + region_war + gender + fin_safety + debts + age, data = dt)
+
+phys_6 <- lm(feel_calm ~ phys_viol + monthly_inc + region_war + gender + fin_safety + debts + age, data = dt)
+
+stargazer(phys_full, 
+          phys_1, 
+          phys_2,
+          phys_4,
+          phys_5,
+          phys_6,
+          header=FALSE,
+          type='text', 
+          digits=3,
+          font.size = "normalsize",
+          align = TRUE,
+          omit.stat=c("ser"),
+          column.sep.width = "-25pt")
+
+# Direct Effect for phys_viol
+direct_effect_phys <- coef(phys_full)["phys_viol"]
+direct_se_phys <- summary(phys_full)$coefficients["phys_viol", "Std. Error"]
+direct_pvalue_phys <- summary(phys_full)$coefficients["phys_viol", "Pr(>|t|)"]
+direct_ci_low_phys <- direct_effect_phys - 1.96 * direct_se_phys
+direct_ci_high_phys <- direct_effect_phys + 1.96 * direct_se_phys
+
+# Indirect Effects for Each Mediator
+
+indirect_effects_phys <- c(
+  coef(phys_1)["phys_viol"] * coef(phys_full)["fwb_war"],
+  coef(phys_2)["phys_viol"] * coef(phys_full)["fwb_expect"],
+  coef(phys_4)["phys_viol"] * coef(phys_full)["feel_sad"],
+  coef(phys_5)["phys_viol"] * coef(phys_full)["feel_energy"],
+  coef(phys_6)["phys_viol"] * coef(phys_full)["feel_calm"]
+)
+
+# Standard error of indirect effect
+indirect_se_phys <- sqrt(
+  (coef(phys_1)["phys_viol"]^2 * summary(phys_full)$coefficients["fwb_war", "Std. Error"]^2) +
+  (coef(phys_full)["fwb_war"]^2 * summary(phys_1)$coefficients["phys_viol", "Std. Error"]^2) +
+  (coef(phys_2)["phys_viol"]^2 * summary(phys_full)$coefficients["fwb_expect", "Std. Error"]^2) +
+  (coef(phys_full)["fwb_expect"]^2 * summary(phys_2)$coefficients["phys_viol", "Std. Error"]^2) +
+  (coef(phys_4)["phys_viol"]^2 * summary(phys_full)$coefficients["feel_sad", "Std. Error"]^2) +
+  (coef(phys_full)["feel_sad"]^2 * summary(phys_4)$coefficients["phys_viol", "Std. Error"]^2) +
+  (coef(phys_5)["phys_viol"]^2 * summary(phys_full)$coefficients["feel_energy", "Std. Error"]^2) +
+  (coef(phys_full)["feel_energy"]^2 * summary(phys_5)$coefficients["phys_viol", "Std. Error"]^2) +
+  (coef(phys_6)["phys_viol"]^2 * summary(phys_full)$coefficients["feel_calm", "Std. Error"]^2) +
+  (coef(phys_full)["feel_calm"]^2 * summary(phys_6)$coefficients["phys_viol", "Std. Error"]^2)
+)
+
+# Assuming normal distribution for the indirect effect
+indirect_effect_phys <- sum(indirect_effects_phys)
+indirect_pvalue_phys <- 2 * (1 - pnorm(abs(indirect_effect_phys / indirect_se_phys)))
+indirect_ci_low_phys <- indirect_effect_phys - 1.96 * indirect_se_phys
+indirect_ci_high_phys <- indirect_effect_phys + 1.96 * indirect_se_phys
+
+# Compile results for phys_viol
+results_phys <- data.frame(
+  Effect = c("Direct", "Indirect"),
+  Estimate = c(direct_effect_phys, indirect_effect_phys),
+  Std.Error = c(direct_se_phys, indirect_se_phys),
+  P.Value = c(direct_pvalue_phys, indirect_pvalue_phys),
+  CI.Lower = c(direct_ci_low_phys, indirect_ci_low_phys),
+  CI.Upper = c(direct_ci_high_phys, indirect_ci_high_phys)
+)
+
+results_phys
+```
+
+```{r}
+# Emo violence
+emo_full <- lm(score.c ~ emo_viol + fwb_war + fwb_expect + feel_sad + feel_energy + feel_calm + monthly_inc + region_war + gender + fin_safety + debts + age, data = dt)
+
+emo_1 <- lm(fwb_war ~ emo_viol + monthly_inc + region_war + gender + fin_safety + debts + age, data = dt)
+
+emo_2 <- lm(fwb_expect ~ emo_viol + monthly_inc + region_war + gender + fin_safety + debts + age, data = dt)
+
+emo_4 <- lm(feel_sad ~ emo_viol + monthly_inc + region_war + gender + fin_safety + debts + age, data = dt)
+
+emo_5 <- lm(feel_energy ~ emo_viol + monthly_inc + region_war + gender + fin_safety + debts + age, data = dt)
+
+emo_6 <- lm(feel_calm ~ emo_viol + monthly_inc + region_war + gender + fin_safety + debts + age, data = dt)
+
+stargazer(emo_full, 
+          emo_1, 
+          emo_2,
+          emo_4,
+          emo_5,
+          emo_6,
+          header=FALSE,
+          type='text', 
+          digits=3,
+          font.size = "normalsize",
+          align = TRUE,
+          omit.stat=c("ser"),
+          column.sep.width = "-25pt")
+
+# Direct Effect for emo_viol
+direct_effect_emo <- coef(emo_full)["emo_viol"]
+direct_se_emo <- summary(emo_full)$coefficients["emo_viol", "Std. Error"]
+direct_pvalue_emo <- summary(emo_full)$coefficients["emo_viol", "Pr(>|t|)"]
+direct_ci_low_emo <- direct_effect_emo - 1.96 * direct_se_emo
+direct_ci_high_emo <- direct_effect_emo + 1.96 * direct_se_emo
+
+# Indirect Effects for Each Mediator
+
+indirect_effects_emo <- c(
+  coef(emo_1)["emo_viol"] * coef(emo_full)["fwb_war"],
+  coef(emo_2)["emo_viol"] * coef(emo_full)["fwb_expect"],
+  coef(emo_4)["emo_viol"] * coef(emo_full)["feel_sad"],
+  coef(emo_5)["emo_viol"] * coef(emo_full)["feel_energy"],
+  coef(emo_6)["emo_viol"] * coef(emo_full)["feel_calm"]
+)
+
+# Standard error of indirect effect
+indirect_se_emo <- sqrt(
+  (coef(emo_1)["emo_viol"]^2 * summary(emo_full)$coefficients["fwb_war", "Std. Error"]^2) +
+  (coef(emo_full)["fwb_war"]^2 * summary(emo_1)$coefficients["emo_viol", "Std. Error"]^2) +
+  (coef(emo_2)["emo_viol"]^2 * summary(emo_full)$coefficients["fwb_expect", "Std. Error"]^2) +
+  (coef(emo_full)["fwb_expect"]^2 * summary(emo_2)$coefficients["emo_viol", "Std. Error"]^2) +
+  (coef(emo_4)["emo_viol"]^2 * summary(emo_full)$coefficients["feel_sad", "Std. Error"]^2) +
+  (coef(emo_full)["feel_sad"]^2 * summary(emo_4)$coefficients["emo_viol", "Std. Error"]^2) +
+  (coef(emo_5)["emo_viol"]^2 * summary(emo_full)$coefficients["feel_energy", "Std. Error"]^2) +
+  (coef(emo_full)["feel_energy"]^2 * summary(emo_5)$coefficients["emo_viol", "Std. Error"]^2) +
+  (coef(emo_6)["emo_viol"]^2 * summary(emo_full)$coefficients["feel_calm", "Std. Error"]^2) +
+  (coef(emo_full)["feel_calm"]^2 * summary(emo_6)$coefficients["emo_viol", "Std. Error"]^2)
+)
+
+# Assuming normal distribution for the indirect effect
+indirect_effect_emo <- sum(indirect_effects_emo)
+indirect_pvalue_emo <- 2 * (1 - pnorm(abs(indirect_effect_emo / indirect_se_emo)))
+indirect_ci_low_emo <- indirect_effect_emo - 1.96 * indirect_se_emo
+indirect_ci_high_emo <- indirect_effect_emo + 1.96 * indirect_se_emo
+
+# Compile results for emo_viol
+results_emo <- data.frame(
+  Effect = c("Direct", "Indirect"),
+  Estimate = c(direct_effect_emo, indirect_effect_emo),
+  Std.Error = c(direct_se_emo, indirect_se_emo),
+  P.Value = c(direct_pvalue_emo, indirect_pvalue_emo),
+  CI.Lower = c(direct_ci_low_emo, indirect_ci_low_emo),
+  CI.Upper = c(direct_ci_high_emo, indirect_ci_high_emo)
+)
+
+print(results_emo)
+
+```
+
+```{r}
+# Robbery
+rob_full <- lm(score.c ~ robbery + fwb_war + fwb_expect + feel_sad + feel_energy + feel_calm + monthly_inc + region_war + gender + fin_safety + debts + age, data = dt)
+
+rob_1 <- lm(fwb_war ~ robbery + monthly_inc + region_war + gender + fin_safety + debts + age, data = dt)
+
+rob_2 <- lm(fwb_expect ~ robbery + monthly_inc + region_war + gender + fin_safety + debts + age, data = dt)
+
+rob_4 <- lm(feel_sad ~ robbery + monthly_inc + region_war + gender + fin_safety + debts + age, data = dt)
+
+rob_5 <- lm(feel_energy ~ robbery + monthly_inc + region_war + gender + fin_safety + debts + age, data = dt)
+
+rob_6 <- lm(feel_calm ~ robbery + monthly_inc + region_war + gender + fin_safety + debts + age, data = dt)
+
+stargazer(rob_full, 
+          rob_1, 
+          rob_2,
+          rob_4,
+          rob_5,
+          rob_6,
+          header=FALSE,
+          type='text', 
+          digits=3,
+          font.size = "normalsize",
+          align = TRUE,
+          omit.stat=c("ser"),
+          column.sep.width = "-25pt")
+
+# Direct Effect for robbery
+direct_effect_rob <- coef(rob_full)["robbery"]
+direct_se_rob <- summary(rob_full)$coefficients["robbery", "Std. Error"]
+direct_pvalue_rob <- summary(rob_full)$coefficients["robbery", "Pr(>|t|)"]
+direct_ci_low_rob <- direct_effect_rob - 1.96 * direct_se_rob
+direct_ci_high_rob <- direct_effect_rob + 1.96 * direct_se_rob
+
+# Indirect Effects for Each Mediator
+
+indirect_effects_rob <- c(
+  coef(rob_1)["robbery"] * coef(rob_full)["fwb_war"],
+  coef(rob_2)["robbery"] * coef(rob_full)["fwb_expect"],
+  coef(rob_4)["robbery"] * coef(rob_full)["feel_sad"],
+  coef(rob_5)["robbery"] * coef(rob_full)["feel_energy"],
+  coef(rob_6)["robbery"] * coef(rob_full)["feel_calm"]
+)
+
+# Standard error of indirect effect
+indirect_se_rob <- sqrt(
+  (coef(rob_1)["robbery"]^2 * summary(rob_full)$coefficients["fwb_war", "Std. Error"]^2) +
+  (coef(rob_full)["fwb_war"]^2 * summary(rob_1)$coefficients["robbery", "Std. Error"]^2) +
+  (coef(rob_2)["robbery"]^2 * summary(rob_full)$coefficients["fwb_expect", "Std. Error"]^2) +
+  (coef(rob_full)["fwb_expect"]^2 * summary(rob_2)$coefficients["robbery", "Std. Error"]^2) +
+  (coef(rob_4)["robbery"]^2 * summary(rob_full)$coefficients["feel_sad", "Std. Error"]^2) +
+  (coef(rob_full)["feel_sad"]^2 * summary(rob_4)$coefficients["robbery", "Std. Error"]^2) +
+  (coef(rob_5)["robbery"]^2 * summary(rob_full)$coefficients["feel_energy", "Std. Error"]^2) +
+  (coef(rob_full)["feel_energy"]^2 * summary(rob_5)$coefficients["robbery", "Std. Error"]^2) +
+  (coef(rob_6)["robbery"]^2 * summary(rob_full)$coefficients["feel_calm", "Std. Error"]^2) +
+  (coef(rob_full)["feel_calm"]^2 * summary(rob_6)$coefficients["robbery", "Std. Error"]^2)
+)
+
+# Assuming normal distribution for the indirect effect
+indirect_effect_rob <- sum(indirect_effects_rob)
+indirect_pvalue_rob <- 2 * (1 - pnorm(abs(indirect_effect_rob / indirect_se_rob)))
+indirect_ci_low_rob <- indirect_effect_rob - 1.96 * indirect_se_rob
+indirect_ci_high_rob <- indirect_effect_rob + 1.96 * indirect_se_rob
+
+# Compile results for robbery
+results_rob <- data.frame(
+  Effect = c("Direct", "Indirect"),
+  Estimate = c(direct_effect_rob, indirect_effect_rob),
+  Std.Error = c(direct_se_rob, indirect_se_rob),
+  P.Value = c(direct_pvalue_rob, indirect_pvalue_rob),
+  CI.Lower = c(direct_ci_low_rob, indirect_ci_low_rob),
+  CI.Upper = c(direct_ci_high_rob, indirect_ci_high_rob)
+)
+
+print(results_rob)
+
+
+```
+
+```{r}
+# Fam AFU
+fam_afu_full <- lm(score.c ~ fam_afu + fwb_war + fwb_expect + feel_sad + feel_energy + feel_calm + monthly_inc + region_war + gender + fin_safety + debts + age, data = dt)
+
+fafu_1 <- lm(fwb_war ~ fam_afu + monthly_inc + region_war + gender + fin_safety + debts + age, data = dt)
+
+fafu_2 <- lm(fwb_expect ~ fam_afu + monthly_inc + region_war + gender + fin_safety + debts + age, data = dt)
+
+fafu_4 <- lm(feel_sad ~ fam_afu + monthly_inc + region_war + gender + fin_safety + debts + age, data = dt)
+
+fafu_5 <- lm(feel_energy ~ fam_afu + monthly_inc + region_war + gender + fin_safety + debts + age, data = dt)
+
+fafu_6 <- lm(feel_calm ~ fam_afu + monthly_inc + region_war + gender + fin_safety + debts + age, data = dt)
+
+stargazer(fam_afu_full, 
+          fafu_1, 
+          fafu_2,
+          fafu_4,
+          fafu_5,
+          fafu_6,
+          header=FALSE,
+          type='text', 
+          digits=3,
+          font.size = "normalsize",
+          align = TRUE,
+          omit.stat=c("ser"),
+          column.sep.width = "-25pt")
+
+# Direct Effect for fam_afu
+direct_effect_fafu <- coef(fam_afu_full)["fam_afu"]
+direct_se_fafu <- summary(fam_afu_full)$coefficients["fam_afu", "Std. Error"]
+direct_pvalue_fafu <- summary(fam_afu_full)$coefficients["fam_afu", "Pr(>|t|)"]
+direct_ci_low_fafu <- direct_effect_fafu - 1.96 * direct_se_fafu
+direct_ci_high_fafu <- direct_effect_fafu + 1.96 * direct_se_fafu
+
+# Indirect Effects for Each Mediator
+
+indirect_effects_fafu <- c(
+  coef(fafu_1)["fam_afu"] * coef(fam_afu_full)["fwb_war"],
+  coef(fafu_2)["fam_afu"] * coef(fam_afu_full)["fwb_expect"],
+  coef(fafu_4)["fam_afu"] * coef(fam_afu_full)["feel_sad"],
+  coef(fafu_5)["fam_afu"] * coef(fam_afu_full)["feel_energy"],
+  coef(fafu_6)["fam_afu"] * coef(fam_afu_full)["feel_calm"]
+)
+
+# Standard error of indirect effect
+indirect_se_fafu <- sqrt(
+  (coef(fafu_1)["fam_afu"]^2 * summary(fam_afu_full)$coefficients["fwb_war", "Std. Error"]^2) +
+  (coef(fam_afu_full)["fwb_war"]^2 * summary(fafu_1)$coefficients["fam_afu", "Std. Error"]^2) +
+  (coef(fafu_2)["fam_afu"]^2 * summary(fam_afu_full)$coefficients["fwb_expect", "Std. Error"]^2) +
+  (coef(fam_afu_full)["fwb_expect"]^2 * summary(fafu_2)$coefficients["fam_afu", "Std. Error"]^2) +
+  (coef(fafu_4)["fam_afu"]^2 * summary(fam_afu_full)$coefficients["feel_sad", "Std. Error"]^2) +
+  (coef(fam_afu_full)["feel_sad"]^2 * summary(fafu_4)$coefficients["fam_afu", "Std. Error"]^2) +
+  (coef(fafu_5)["fam_afu"]^2 * summary(fam_afu_full)$coefficients["feel_energy", "Std. Error"]^2) +
+  (coef(fam_afu_full)["feel_energy"]^2 * summary(fafu_5)$coefficients["fam_afu", "Std. Error"]^2) +
+  (coef(fafu_6)["fam_afu"]^2 * summary(fam_afu_full)$coefficients["feel_calm", "Std. Error"]^2) +
+  (coef(fam_afu_full)["feel_calm"]^2 * summary(fafu_6)$coefficients["fam_afu", "Std. Error"]^2)
+)
+
+# Assuming normal distribution for the indirect effect
+indirect_effect_fafu <- sum(indirect_effects_fafu)
+indirect_pvalue_fafu <- 2 * (1 - pnorm(abs(indirect_effect_fafu / indirect_se_fafu)))
+indirect_ci_low_fafu <- indirect_effect_fafu - 1.96 * indirect_se_fafu
+indirect_ci_high_fafu <- indirect_effect_fafu + 1.96 * indirect_se_fafu
+
+# Compile results for fam_afu
+results_fafu <- data.frame(
+  Effect = c("Direct", "Indirect"),
+  Estimate = c(direct_effect_fafu, indirect_effect_fafu),
+  Std.Error = c(direct_se_fafu, indirect_se_fafu),
+  P.Value = c(direct_pvalue_fafu, indirect_pvalue_fafu),
+  CI.Lower = c(direct_ci_low_fafu, indirect_ci_low_fafu),
+  CI.Upper = c(direct_ci_high_fafu, indirect_ci_high_fafu)
+)
+
+print(results_fafu)
+
+```
+
+```{r}
+# Fam death
+fam_full <- lm(score.c ~ fam_death + fwb_war + fwb_expect + feel_sad + feel_energy + feel_calm + monthly_inc + region_war + gender + fin_safety + debts + age, data = dt)
+
+fam_1 <- lm(fwb_war ~ fam_death + monthly_inc + region_war + gender + fin_safety + debts + age, data = dt)
+
+fam_2 <- lm(fwb_expect ~ fam_death + monthly_inc + region_war + gender + fin_safety + debts + age, data = dt)
+
+fam_4 <- lm(feel_sad ~ fam_death + monthly_inc + region_war + gender + fin_safety + debts + age, data = dt)
+
+fam_5 <- lm(feel_energy ~ fam_death + monthly_inc + region_war + gender + fin_safety + debts + age, data = dt)
+
+fam_6 <- lm(feel_calm ~ fam_death + monthly_inc + region_war + gender + fin_safety + debts + age, data = dt)
+
+stargazer(fam_full, 
+          fam_1, 
+          fam_2,
+          fam_4,
+          fam_5,
+          fam_6,
+          header=FALSE,
+          type='text', 
+          digits=3,
+          font.size = "normalsize",
+          align = TRUE,
+          omit.stat=c("ser"),
+          column.sep.width = "-25pt")
+
+# Direct Effect for fam_death
+# direct_effect_fam <- coef(fam_full)["fam_death"]
+# direct_se_fam <- summary(fam_full)$coefficients["fam_death", "Std. Error"]
+# direct_pvalue_fam <- summary(fam_full)$coefficients["fam_death", "Pr(>|t|)"]
+# direct_ci_low_fam <- direct_effect_fam - 1.96 * direct_se_fam
+# direct_ci_high_fam <- direct_effect_fam + 1.96 * direct_se_fam
+# 
+# # Indirect Effects for Each Mediator
+# 
+# indirect_effects_fam <- c(
+#   coef(fam_1)["fam_death"] * coef(fam_full)["fwb_war"],
+#   coef(fam_2)["fam_death"] * coef(fam_full)["fwb_expect"],
+#   coef(fam_4)["fam_death"] * coef(fam_full)["feel_sad"],
+#   coef(fam_5)["fam_death"] * coef(fam_full)["feel_energy"],
+#   coef(fam_6)["fam_death"] * coef(fam_full)["feel_calm"]
+# )
+# 
+# # Standard error of indirect effect
+# indirect_se_fam <- sqrt(
+#   (coef(fam_1)["fam_death"]^2 * summary(fam_full)$coefficients["fwb_war", "Std. Error"]^2) +
+#   (coef(fam_full)["fwb_war"]^2 * summary(fam_1)$coefficients["fam_death", "Std. Error"]^2) +
+#   (coef(fam_2)["fam_death"]^2 * summary(fam_full)$coefficients["fwb_expect", "Std. Error"]^2) +
+#   (coef(fam_full)["fwb_expect"]^2 * summary(fam_2)$coefficients["fam_death", "Std. Error"]^2) +
+#   (coef(fam_4)["fam_death"]^2 * summary(fam_full)$coefficients["feel_sad", "Std. Error"]^2) +
+#   (coef(fam_full)["feel_sad"]^2 * summary(fam_4)$coefficients["fam_death", "Std. Error"]^2) +
+#   (coef(fam_5)["fam_death"]^2 * summary(fam_full)$coefficients["feel_energy", "Std. Error"]^2) +
+#   (coef(fam_full)["feel_energy"]^2 * summary(fam_5)$coefficients["fam_death", "Std. Error"]^2) +
+#   (coef(fam_6)["fam_death"]^2 * summary(fam_full)$coefficients["feel_calm", "Std. Error"]^2) +
+#   (coef(fam_full)["feel_calm"]^2 * summary(fam_6)$coefficients["fam_death", "Std. Error"]^2)
+# )
+# 
+# # Assuming normal distribution for the indirect effect
+# indirect_effect_fam <- sum(indirect_effects_fam)
+# indirect_pvalue_fam <- 2 * (1 - pnorm(abs(indirect_effect_fam / indirect_se_fam)))
+# indirect_ci_low_fam <- indirect_effect_fam - 1.96 * indirect_se_fam
+# indirect_ci_high_fam <- indirect_effect_fam + 1.96 * indirect_se_fam
+# 
+# # Compile results for fam_death
+# results_fam <- data.frame(
+#   Effect = c("Direct", "Indirect"),
+#   Estimate = c(direct_effect_fam, indirect_effect_fam),
+#   Std.Error = c(direct_se_fam, indirect_se_fam),
+#   P.Value = c(direct_pvalue_fam, indirect_pvalue_fam),
+#   CI.Lower = c(direct_ci_low_fam, indirect_ci_low_fam),
+#   CI.Upper = c(direct_ci_high_fam, indirect_ci_high_fam)
+# )
+# 
+# print(results_fam)
+# 
+# # Direct Effect for fam_death (path c')
+# c_prime_fam_se <- summary(fam_full)$coefficients["fam_death", "Std. Error"]
+# c_prime_fam_p <- summary(fam_full)$coefficients["fam_death", "Pr(>|t|)"]
+# c_prime_fam_ci <- c(c_prime_fam - 1.96 * c_prime_fam_se,
+#                     c_prime_fam + 1.96 * c_prime_fam_se)
+# 
+# # a paths and their SEs and p-values
+# a_fam_se <- c(
+#   summary(fam_1)$coefficients["fam_death", "Std. Error"],
+#   summary(fam_2)$coefficients["fam_death", "Std. Error"],
+#   summary(fam_4)$coefficients["fam_death", "Std. Error"],
+#   summary(fam_5)$coefficients["fam_death", "Std. Error"],
+#   summary(fam_6)$coefficients["fam_death", "Std. Error"]
+# )
+# 
+# a_fam_p <- c(
+#   summary(fam_1)$coefficients["fam_death", "Pr(>|t|)"],
+#   summary(fam_2)$coefficients["fam_death", "Pr(>|t|)"],
+#   summary(fam_4)$coefficients["fam_death", "Pr(>|t|)"],
+#   summary(fam_5)$coefficients["fam_death", "Pr(>|t|)"],
+#   summary(fam_6)$coefficients["fam_death", "Pr(>|t|)"]
+# )
+# 
+# a_fam_ci <- t(sapply(1:length(a_fam), function(i) {
+#   c(a_fam[i] - 1.96 * a_fam_se[i], a_fam[i] + 1.96 * a_fam_se[i])
+# }))
+# 
+# # b paths and their SEs and p-values
+# b_fam_se <- c(
+#   summary(fam_full)$coefficients["fwb_war", "Std. Error"],
+#   summary(fam_full)$coefficients["fwb_expect", "Std. Error"],
+#   summary(fam_full)$coefficients["feel_sad", "Std. Error"],
+#   summary(fam_full)$coefficients["feel_energy", "Std. Error"],
+#   summary(fam_full)$coefficients["feel_calm", "Std. Error"]
+# )
+# 
+# b_fam_p <- c(
+#   summary(fam_full)$coefficients["fwb_war", "Pr(>|t|)"],
+#   summary(fam_full)$coefficients["fwb_expect", "Pr(>|t|)"],
+#   summary(fam_full)$coefficients["feel_sad", "Pr(>|t|)"],
+#   summary(fam_full)$coefficients["feel_energy", "Pr(>|t|)"],
+#   summary(fam_full)$coefficients["feel_calm", "Pr(>|t|)"]
+# )
+# 
+# b_fam_ci <- t(sapply(1:length(b_fam), function(i) {
+#   c(b_fam[i] - 1.96 * b_fam_se[i], b_fam[i] + 1.96 * b_fam_se[i])
+# }))
+# 
+# # Display the effects
+# results_fam <- data.frame(
+#   Path = c("c'", paste0("a", 1:5), paste0("b", 1:5)),
+#   Effect = c(c_prime_fam, a_fam, b_fam),
+#   P_Value = c(c_prime_fam_p, a_fam_p, b_fam_p),
+#   Lower_CI = c(c_prime_fam_ci[1], a_fam_ci[,1], b_fam_ci[,1]),
+#   Upper_CI = c(c_prime_fam_ci[2], a_fam_ci[,2], b_fam_ci[,2])
+# )
+# 
+# print(results_fam)
+```
+
+```{r}
+# Function to return asterisks for significance
+significance_asterisks <- function(p_value) {
+  if (p_value < 0.01) {
+    return("***")
+  } else if (p_value < 0.05) {
+    return("**")
+  } else if (p_value < 0.1) {
+    return("*")
   } else {
-    return(variable)
+    return("")
   }
 }
 
-data_med_copy <- data_med_copy %>% mutate(across(everything(), convert_labelled_to_numeric))
+# Function to generate results
+generate_results <- function(full_model, models, predictor) {
+  c_prime_se <- summary(full_model)$coefficients[predictor, "Std. Error"]
+  c_prime_p <- summary(full_model)$coefficients[predictor, "Pr(>|t|)"]
+  c_prime <- coef(full_model)[predictor]
+  c_prime_ci <- c(c_prime - 1.96 * c_prime_se, c_prime + 1.96 * c_prime_se)
 
-med_full_fit <- lm(score ~ evacuate +
-                     fwb_expect + 
-                     fwb_war +
-                     fwb_debts +
-                     mh_sad - 1, 
-                   data = data_med_copy)
+  # a paths and their SEs and p-values
+  a_se <- sapply(models, function(mod) summary(mod)$coefficients[predictor, "Std. Error"])
+  a_p <- sapply(models, function(mod) summary(mod)$coefficients[predictor, "Pr(>|t|)"])
+  a <- sapply(models, function(mod) coef(mod)[predictor])
+  a_ci <- t(sapply(1:length(a), function(i) {
+    c(a[i] - 1.96 * a_se[i], a[i] + 1.96 * a_se[i])
+  }))
 
-med_full_fwb_expect <- lm(fwb_expect ~ evacuate - 1, 
-                   data = data_med_copy)
+  # b paths and their SEs and p-values
+  mediators <- c("fwb_war", "fwb_expect", "feel_sad", "feel_energy", "feel_calm")
+  b_se <- sapply(mediators, function(med) summary(full_model)$coefficients[med, "Std. Error"])
+  b_p <- sapply(mediators, function(med) summary(full_model)$coefficients[med, "Pr(>|t|)"])
+  b <- sapply(mediators, function(med) coef(full_model)[med])
+  b_ci <- t(sapply(1:length(b), function(i) {
+    c(b[i] - 1.96 * b_se[i], b[i] + 1.96 * b_se[i])
+  }))
+
+  # Indirect effects and their SEs (using the delta method approximation for SEs)
+  ab <- a * b
+  ab_se <- sqrt(a_se^2 * b^2 + b_se^2 * a^2)
+  ab_ci <- t(sapply(1:length(ab), function(i) {
+    c(ab[i] - 1.96 * ab_se[i], ab[i] + 1.96 * ab_se[i])
+  }))
+
+  # p-values for indirect effects using the normal distribution
+  ab_p <- 2 * (1 - pnorm(abs(ab / ab_se)))
+
+  # Updating the results data frame to include indirect effects
+  results <- data.frame(
+    Path = c("c'", paste0("a", 1:5), paste0("b", 1:5), paste0("ab", 1:5)),
+    Effect = c(c_prime, a, b, ab),
+    P_Value = c(c_prime_p, a_p, b_p, ab_p),
+    Lower_CI = c(c_prime_ci[1], a_ci[,1], b_ci[,1], ab_ci[,1]),
+    Upper_CI = c(c_prime_ci[2], a_ci[,2], b_ci[,2], ab_ci[,2])
+  )
+
+  # Annotating the p-values with asterisks for significance
+  results$Significance <- sapply(results$P_Value, significance_asterisks)
+
+  return(results)
+}
+
+# Adding occupation to the predictors list and the corresponding full model to the full_models list
+predictors <- c("prop_dmg", "bombing", "phys_viol", "emo_viol", "robbery", "fam_afu", "fam_death", "occupation")
+full_models <- list(prop_full, bom_full, phys_full, emo_full, rob_full, fam_afu_full, fam_full, occ_full)
+
+for(i in 1:length(predictors)) {
+  predictor <- predictors[i]
+  full_model <- full_models[[i]]
+
+  # mediator models
+  models <- list(
+    lm(formula(paste0("fwb_war ~ ", predictor, " + monthly_inc + region_war + gender + fin_safety + debts + age")), data=dt),
+    lm(formula(paste0("fwb_expect ~ ", predictor, " + monthly_inc + region_war + gender + fin_safety + debts + age")), data=dt),
+    lm(formula(paste0("feel_sad ~ ", predictor, " + monthly_inc + region_war + gender + fin_safety + debts + age")), data=dt),
+    lm(formula(paste0("feel_energy ~ ", predictor, " + monthly_inc + region_war + gender + fin_safety + debts + age")), data=dt),
+    lm(formula(paste0("feel_calm ~ ", predictor, " + monthly_inc + region_war + gender + fin_safety + debts + age")), data=dt)
+  )
+
+  results <- generate_results(full_model, models, predictor)
+  print(paste("Results for", predictor))
+  print(results)
+  cat("\n")
+}
+```
+
+```{r}
+install.packages("semTools")
+install.packages("semPlot")
+library(semPlot)
+
+library(lavaan)
+
+model_syntax <- "
+# Direct effect
+  score.c ~ c*fam_death
   
-med_full_fwb_war <- lm(fwb_war ~ evacuate - 1, 
-                   data = data_med_copy)
+  # Mediator paths
+  fwb_war ~ a1*fam_death
+  fwb_expect ~ a2*fam_death
+  feel_sad ~ a3*fam_death
+  feel_energy ~ a4*fam_death
+  feel_calm ~ a5*fam_death
+  
+  # Outcome paths
+  score.c ~ b1*fwb_war
+  score.c ~ b2*fwb_expect
+  score.c ~ b3*feel_sad
+  score.c ~ b4*feel_energy
+  score.c ~ b5*feel_calm
+"
+
+fit <- sem(model = model_syntax, data = dt)
+
+semPaths(fit, whatLabels="est.std", style="lisrel", layout="tree")
+```
+
+```{r robust checks}
+rob_mod_war <- lm(score.c ~ Alarms + occupation + bombing + prop_dmg + phys_viol + emo_viol + robbery + fam_afu + fam_death + phys_injury + depression + confid_loss + insom + region_war + age + gender, data = result)
+  
+rob_mod_fwb <- lm(score.c ~ sep + monthly_inc + fwb_expect + fwb_war + debts + region_war + fin_safety, result)
 
 
-med_full_fwb_debts <- lm(fwb_debts ~ evacuate - 1, 
-                   data = data_med_copy)
-  
-med_full_mh_sad <-  lm(mh_sad ~ evacuate - 1, 
-                   data = data_med_copy)
-  
-stargazer(med_full_fit, 
-          med_full_fwb_expect, 
-          med_full_fwb_war, 
-          med_full_fwb_debts,
-          #med_full_mh_sad,
+rob_mod_mh <- lm(score.c ~ Alarms + feel_calm + feel_energy + feel_sad + married_together + married_separate + not_married + no_kids, result)
+
+stargazer(rob_mod_war, mod_score,
           header=FALSE,
           type='text', 
           digits=3,
           font.size = "normalsize",
           align = TRUE,
-          omit.stat=c("f", "ser"),
+          omit.stat=c("ser"),
           column.sep.width = "-25pt")
 
 
+stargazer(rob_mod_fwb, mod_fwb_score,
+          header=FALSE,
+          type='text', 
+          digits=3,
+          font.size = "normalsize",
+          align = TRUE,
+          omit.stat=c("ser"),
+          column.sep.width = "-25pt")
+
+stargazer(rob_mod_mh, mod_mh_td,
+          header=FALSE,
+          type='text', 
+          digits=3,
+          font.size = "normalsize",
+          align = TRUE,
+          omit.stat=c("ser"),
+          column.sep.width = "-25pt")
 ```
 
-
-```{r}
-med_fit <- lm(fwb_war ~ evacuate - 1, data = data_med_copy)
-out_fit <- lm(score ~ fwb_war + evacuate - 1, data = data_med_copy)
-
-med_out <- mediate(med_fit, out_fit, 
-        treat = "evacuate",
-        mediator = "fwb_war",
-        robustSE = FALSE)
-
-
-summary(med_out)
-```
-
-```{r}
-library(bruceR)
-
-data_mediation <- bind_cols(data_mediation, dummies)
-
-PROCESS(data = data_mediation, 
-        y = "score.c", 
-        x = "evacuate", 
-        meds = c("fwb_war", "fwb_expect", "fwb_debts", "mh_sad"),
-        med.type = "parallel",
-        covs = c("age", "gender", "inc_indiv", "inc_house"),
-        nsim = 1000,
-        ci = "mcmc",
-        seed = 4321)
-
-PROCESS(data = data_mediation, 
-        y = "score.c", 
-        x = "bombing", 
-        meds = c("fwb_war", "fwb_expect", "fwb_debts", "mh_sad"),
-        med.type = "parallel",
-        covs = c("age", "gender", "inc_indiv", "inc_house"),
-        nsim = 1000,
-        ci = "mcmc",
-        seed = 4321)
-
-
-PROCESS(data = data_mediation, 
-        y = "score.c", 
-        x = "occupation", 
-        meds = c("fwb_war", "fwb_expect", "fwb_debts", "mh_sad"),
-        covs = c("age", "gender", "inc_indiv", "inc_house"),
-        nsim = 1000,
-        seed = 4321)
-
-PROCESS(data = data_mediation, 
-        y = "score.c", 
-        x = "prop_dmg", 
-        meds = c("fwb_war", "fwb_expect", "fwb_debts", "mh_sad"),
-        med.type = "parallel",
-        covs = c("age", "gender", "inc_indiv", "inc_house"),
-        nsim = 1000,
-        ci = "mcmc",
-        seed = 4321)
-
-
-PROCESS(data = data_mediation, 
-        y = "score.c", 
-        x = "emo_viol", 
-        meds = c("fwb_war", "fwb_expect", "fwb_debts", "mh_sad"),
-        med.type = "parallel",
-        covs = c("age", "gender", "inc_indiv", "inc_house"),
-        nsim = 1000,
-        ci = "mcmc",
-        seed = 4321)
-
-PROCESS(data = data_mediation, 
-        y = "score.c", 
-        x = "robbery", 
-        meds = c("fwb_war", "fwb_expect", "fwb_debts", "mh_sad"),
-        med.type = "parallel",
-        covs = c("age", "gender", "inc_indiv", "inc_house"),
-        nsim = 1000,
-        ci = "mcmc",
-        seed = 4321)
-
-PROCESS(data = data_mediation, 
-        y = "score.c", 
-        x = "fam_death", 
-        meds = c("fwb_war", "fwb_expect", "fwb_debts", "mh_sad"),
-        med.type = "parallel",
-        covs = c("age", "gender", "inc_indiv", "inc_house"),
-        nsim = 1000,
-        ci = "mcmc",
-        seed = 4321)
-
-PROCESS(data = data_mediation, 
-        y = "score.c", 
-        x = "fam_afu", 
-        meds = c("fwb_war", "fwb_expect", "fwb_debts", "mh_sad", "depression", "insom", "confid_loss"),
-        med.type = "parallel",
-        covs = c("age", "gender", "inc_indiv", "inc_house"),
-        nsim = 1000,
-        ci = "mcmc",
-        seed = 4321)
-```
-
-```{r}
-# library(UpSetR)
-# data_venn <- data_mediation[,c(9:22)]
-# data_venn <- as.data.frame(data_venn)
-# upset(data_venn, order.by = "freq", sets = c("evacuate", 
-#                           "occupation", 
-#                           "bombing",
-#                           "prop_dmg", 
-#                           "phys_viol", 
-#                           "emo_viol", 
-#                           "robbery", 
-#                           "fam_afu", 
-#                           "fam_death", 
-#                           "phys_injury", 
-#                           "depression", 
-#                           "confid_loss",
-#                           "insom",
-#                           "no_effect"))
-```
-
-## EDA
-
-```{r Distribution of TD and ANOMALIES}
-ruggeri_2021 <- read.csv("data/ruggeri_2021.csv")
-
-ruggeri_mean <- mean(ruggeri_2021$score)
-ruggeri_var <- var(ruggeri_2021$score)
-
-my_mean <- mean(dt$score)
-my_var <- var(dt$score)
-
-# F-statistic
-F_stat <- my_var / ruggeri_var
-
-# Plotting
-
-F_stat
-# Plot using the combined data
-ggplot() +
-  # Histograms
-  geom_histogram(data = ruggeri_2021, aes(x = score, y = ..density.., fill = "Ruggeri (2022)"), alpha = 0.45, bins = 17, position = "identity") +
-  geom_histogram(data = dt, aes(x = score, y = ..density.., fill = "Present Study"), alpha = 0.45, bins = 17, position = "identity") +
-  geom_vline(aes(xintercept = ruggeri_mean), color = "blue", linetype = "dashed", size = 1.5) +
-  geom_vline(aes(xintercept = my_mean), color = "red", linetype = "dashed", size = 1.5) +
-  
-  # Other elements
-  labs(title = "", x = "Temporal Discounting Score", y = "") +
-  scale_fill_manual(values = c("Ruggeri (2022)" = "blue", "Present Study" = "red")) +
-  
-  # X-axis labels and breaks adjustment
-  scale_x_continuous(breaks = seq(0, 17, by = 2)) + # Even numbers
-  
-  theme_minimal() +
-  theme(
-    text = element_text(family = "Garamond", size = 18),
-    legend.position = c(0.95, 0.95),
-    legend.justification = c(1, 1),
-    legend.background = element_rect(color = "black", fill = "white"),
-    legend.key = element_rect(color = "white"),
-    panel.grid.major.x = element_line(color = "grey90")
-  ) +
-  guides(fill = guide_legend(title = NULL))
-
-
-dt_anomaly <- dt %>% 
-  select(presbias, absolmag, gainloss,delayspeed)
-
-# Create the data frames
-ruggeri_2021_err <- data.frame(
-  variable = c("presbias", "absolmag", "gainloss", "delayspeed"),
-  mean = c(0.10, 0.20, 0.37, 0.23),
-  se = c(0.02, 0.02, 0.03, 0.03),
-  study = "ruggeri_2021"
-)
-
-dt_anomaly <- data.frame(
-  variable = c("presbias", "absolmag", "gainloss", "delayspeed"),
-  mean = c(0.06, 0.19, 0.40, 0.18),
-  se = c(0.01, 0.01, 0.02, 0.01),
-  study = "dt_anomaly"
-)
-
-# Combine data
-combined_data <- rbind(ruggeri_2021_err, dt_anomaly)
-
-# Calculate the confidence intervals
-combined_data <- combined_data %>%
-  mutate(
-    CI_upper = mean + (1.96 * se),
-    CI_lower = mean - (1.96 * se)
-  )
-
-# Create the ggplot
-ggplot(data = combined_data, aes(y = variable, x = mean, color = study, group = study)) +
-  geom_errorbarh(aes(xmin = CI_lower, xmax = CI_upper), height = 0.2, position = position_dodge(0.4), size = 1.5) +
-  geom_point(position = position_dodge(0.4), size = 4) +
-  scale_y_discrete(labels = c("presbias" = "Present Bias", 
-                              "absolmag" = "Absolute \n Magnitude", 
-                              "gainloss" = "Sign Effect", 
-                              "delayspeed" = "Delay-Speedup \n Asymmetry")) +
-  scale_color_manual(values = c("ruggeri_2021" = "blue", "dt_anomaly" = "red"), 
-                     labels = c("ruggeri_2021" = "Ruggeri (2022)", "dt_anomaly" = "Present Study"), 
-                     name = "") + 
-  theme_minimal() +
-  labs(x = "", y = "", title = "") +
-  theme(
-    text = element_text(family = "Garamond", size = 24),
-    legend.position = c(0.95, 0.95),
-    legend.justification = c(1, 1),
-    legend.background = element_rect(color = "black", fill = "white"),
-    legend.key = element_rect(color = "white"),
-    legend.title = element_blank(),
-    panel.grid.major.x = element_line(color = "grey90")
-  ) +
-  guides(fill = guide_legend(title = NULL))
-
-```
-
-```{r INCOME PLOT}
-# Calculate the number of "Don't want" responses for each question
-dontwant_count_q21 <- sum(data_copy$q21 == 7)
-dontwant_count_q21_1 <- sum(data_copy$q21_1 == 7)
-
-# Filter out "Don't want" responses from data_copy for g2 plot
-data_copy_filtered_g2 <- data_copy[data_copy$q21 != 7,]
-
-
-# Filter out "Don't want" responses from data_copy for g1 plot
-data_copy_filtered_g1 <- data_copy[data_copy$q21_1 != 7,]
-
-# g2 Plot
-g2 <- ggplot(data_copy_filtered_g2, aes(y = q21, fill = demo_gender)) +
-  geom_bar() +
-  labs(title = "Individual income",
-       x = "Frequency of responses",
-       y = "") +
-  geom_text(aes(label = ..count..), 
-            stat = 'count', hjust = 1.5, 
-            color = "black", size = 5, 
-            family = "Garamond") +
-  theme_classic() +
-  theme(text = element_text(family = "Garamond", size = 14),
-        plot.title = element_text(hjust = 0.5),
-        axis.line.x = element_blank(),
-        axis.ticks.x = element_blank(),
-        axis.text.x = element_blank()) +
-  scale_y_continuous(breaks = c(1,2,3,4,5,6), 
-                     labels = c("5-",
-                                "5-19",
-                                "20-39",
-                                "40-59",
-                                "60-79",
-                                "80+")) +
-  coord_flip() +
-  scale_x_reverse()
-
-# g1 Plot (left-facing)
-g1 <- ggplot(data_copy_filtered_g1, aes(y = q21_1)) +
-  geom_bar() +
-  labs(title = "Household income",
-       x = "Frequency of responses",
-       y = "") +
-  geom_text(aes(label = ..count..), 
-            stat = 'count', hjust = -0.5, 
-            color = "black", size = 5, 
-            family = "Garamond") +
-  theme_classic() +
-  theme(text = element_text(family = "Garamond", size = 14),
-        plot.caption = element_text(size = 11),
-        plot.title = element_text(hjust = 0.5),
-        axis.line.x = element_blank(),
-        axis.ticks.x = element_blank(),
-        axis.text.x = element_blank()) +
-  scale_y_continuous(breaks = c(1,2,3,4,5,6), 
-                     labels = c("5-",
-                                "5-19",
-                                "20-39",
-                                "40-59",
-                                "60-79",
-                                "80+")) +
-  coord_flip()
-
-# Combine the plots
-
-g1 <- g1 + scale_y_reverse()
-gridExtra::grid.arrange(g1, g2, ncol = 2)
-```
-
-```{r}
-# sanity check
-check <- data_copy %>% 
-  select(q21, q21_1, geosoc1) %>% 
-  filter(q21 != 7 & q21_1 != 7) %>%
-  mutate(anom = q21 > q21_1,
-         breadwinner = q21 == q21_1)
-
-g3 <- ggplot(check, aes(x = as.factor(breadwinner))) +
-  geom_bar() +
-  labs(title = "Personal income = Household income?",
-       x = "",
-       y = "# of responders") +
-  geom_text(aes(label = ..count..), 
-            stat = 'count', vjust = -0.5, 
-            color = "black", size = 5, 
-            family = "Garamond") +
-  theme_classic()
-
-g3
-
-g4 <- check %>% 
-  filter(geosoc1 %in% c(1,3,5,6)) %>% 
-  ggplot(aes(x = as.factor(breadwinner))) +
-  geom_bar() +
-  labs(title = "Personal income = Household income 
-       + living apart + widow + single",
-       x = "",
-       y = "# of responders") +
-  geom_text(aes(label = ..count..), 
-            stat = 'count', vjust = -0.5, 
-            color = "black", size = 5, 
-            family = "Garamond") +
-  theme_classic()
-
-# Arrange Plots
-gridExtra::grid.arrange(g1, g2, g3, g4, ncol = 2)
-
-
-ggplot(data_clean, aes(x = as.factor(q20))) +
-  geom_bar() +
-  geom_text(aes(label = ..count..), 
-            stat = 'count', vjust = -0.5, 
-            color = "black", size = 5, 
-            family = "Garamond") +
-  theme_classic()
-
-```
-
-```{r}
-ggplot(data_copy, aes(x = q19)) +
-  geom_bar() +
-  labs(title = "Present bias",
-       x = "",
-       y = "# of responders") +
-  geom_text(aes(label = ..count..), 
-            stat = 'count', vjust = -0.5, 
-            color = "black", size = 5, 
-            family = "Garamond") +
-  theme_classic() +
-  scale_x_continuous(breaks = c(1,2,3,4,5), 
-                     labels = c("Now",
-                                "3 months",
-                                "6 months",
-                                "9 months",
-                                "12 months"))
-
-
-##########################
-ggplot(data_copy, aes(x = as.factor(demo_age_int))) +
-  geom_bar() +
-  labs(title = "",
-       x = "",
-       y = "# of responders") +
-  geom_text(aes(label = ..count..), 
-            stat = 'count', vjust = -0.5, 
-            color = "black", size = 5, 
-            family = "Garamond") +
-  theme_classic() +
-  theme(text = element_text(family = "Garamond", size = 14),
-        plot.caption = element_text(size = 11),
-        plot.title = element_text(hjust = 0.5),
-        axis.line.y = element_blank(),
-        axis.ticks.y = element_blank(),
-        axis.text.y = element_blank()) +
-  scale_x_discrete(breaks = c(3,4,5,6,7), 
-                     labels = c("18 - 24",
-                                "25 - 34",
-                                "35 - 44",
-                                "45 - 54",
-                                "55 - 60"))
-########################
-
-
-ggplot(dt, aes(x = as.factor(fin_safety))) +
-  geom_bar() +
-  labs(title = "",
-       x = "",
-       y = "# of responders") +
-  geom_text(aes(label = ..count..), 
-            stat = 'count', vjust = -0.5, 
-            color = "black", size = 5, 
-            family = "Garamond") +
-  theme_classic() +
-  theme(text = element_text(family = "Garamond", size = 14),
-        plot.caption = element_text(size = 11),
-        plot.title = element_text(hjust = 0.5),
-        axis.line.y = element_blank(),
-        axis.ticks.y = element_blank(),
-        axis.text.y = element_blank())
-
-```
-
-```{r FWB}
-dt$fwb_expect <- factor(dt$fwb_expect, levels = c(2, 1, 0, -1, -2), 
-                        labels = c('Much better', 'Better', 'Same', 'Worse', 'Much worse'))
-
-dt$fwb_war <- factor(dt$fwb_war, levels = c(2, 1, 0, -1, -2), 
-                     labels = c('Much better', 'Better', 'Same', 'Worse', 'Much worse'))
-
-# Gathering data to long format for easier plotting
-dt_long <- dt %>% 
-  select(fwb_expect, fwb_war) %>% 
-  gather(question, response, everything())
-
-# Plotting
-count_expect <- dt %>% group_by(fwb_expect) %>% summarise(n=n())
-count_war <- dt %>% group_by(fwb_war) %>% summarise(n=-n())  # Negative for pointing left
-
-# Plot
-ggplot() +
-  geom_bar(data=count_expect, aes(x=fwb_expect, y=n, fill="Expected Change"), stat="identity") +
-  geom_bar(data=count_war, aes(x=fwb_war, y=n, fill="Actual Change"), stat="identity") +
-  geom_text(data=count_expect, aes(x=fwb_expect, y=n/2, label=n), position=position_dodge(width=0.9), size = 7, family = "Garamond") +
-  geom_text(data=count_war, aes(x=fwb_war, y=n/2, label=-n), position=position_dodge(width=0.9), size = 7, family = "Garamond") +
-  labs(x="",
-       y="",
-       fill="Question",
-       title="") +
-  theme_minimal() +
-  theme(text = element_text(family = "Garamond", size = 28),
-        axis.text.x = element_blank(),
-        legend.position = c(0.95, 0.95),
-        legend.justification = c(1, 1),
-        legend.background = element_rect(color = "black", fill = "white"),
-        legend.key = element_rect(color = "white"),
-        legend.title = element_blank(),
-        panel.grid.major.x = element_line(color = "grey90")) +
-  coord_flip() +
-  scale_fill_manual(values=c("skyblue", "salmon")) +
-  scale_y_continuous(labels=abs) + # Absolute value for y-axis labels
-  guides(fill = guide_legend(title = NULL))
-```
-
-```{r MH PLOT}
-dt_longer <- dt %>% 
-  pivot_longer(cols = c(feel_sad, feel_calm, feel_energy), 
-               names_to = "variable", 
-               values_to = "value")
-
-colors <- c("0" = "#08306B",   # Deep blue
-            "1" = "#08519C",   # Darker blue
-            "2" = "#2171B5",   # Dark blue
-            "3" = "#4292C6",   # Medium blue
-            "4" = "#6BAED6",   # Light blue
-            "5" = "#BDD7E7")   # Very light blue
-
-ggplot(dt_longer, aes(x = as.factor(value), fill = as.factor(value))) +
-  geom_bar() +
-  scale_fill_manual(values = colors) +  # Specify the colors
-  scale_x_discrete(labels = c("0" = "Always",
-                   "1" = "",
-                   "2" = "",
-                   "3" = "",
-                   "4" = "",
-                   "5" = "Never")) +  # Customize x-axis labels
-  labs(title = "",
-       x = "",
-       y = "# of responders") +
-  geom_text(aes(label = ..count..), 
-            stat = 'count', vjust = -0.5, 
-            color = "black", size = 5, 
-            family = "Garamond") +
-  geom_segment(aes(x = -0.1, y = 0, xend = 7.1, yend = 0), arrow = arrow(type = "closed", ends = "both", angle = 15, length = unit(0.2, "inches"))) +  # adjust y and yend values based on the margin you want below the bars
-  facet_wrap(~ variable, scales = "free_y", ncol = 3, labeller = labeller(variable = c(feel_sad = "Sad", 
-                  feel_calm = "Calm", 
-                  feel_energy = "Energetic"))) +
-  theme_classic() +
-  theme(text = element_text(family = "Garamond", size = 24),
-        plot.caption = element_text(size = 11),
-        plot.title = element_text(hjust = 0.5),
-        axis.line.y = element_blank(),
-        axis.ticks.y = element_blank(),
-        axis.text.y = element_blank(),
-        axis.line.x = element_blank(),   # Remove x-axis line
-        axis.ticks.x = element_blank(),
-        axis.text.x = element_text(vjust = 5),
-        legend.position = "none")  # Add this to remove the legend, if not needed
-```
-
-```{r OBLAST PLOT}
-ggplot(data_copy, aes(x = geosoc6)) +
-  geom_bar() +
-  labs(title = "What best characterizes your actions after Feb 24th 2022?",
-       y = "# of respondents") +
-  coord_flip() +
-   geom_text(stat = 'count', aes(label = ..count..), hjust = -0.5, color = "black", size = 5, family = "Garamond") +
-  theme_classic() +
-  theme(plot.title = element_text(family = "Garamond", hjust = 0.5, size = 20),
-        plot.caption = element_text(family = "Garamond"),
-        axis.text.y = element_text(family = "Garamond", size = 15),
-        axis.text.x = element_blank(),
-        axis.title.x = element_text(family = "Garamond"),
-        axis.title.y = element_blank()) +
-  scale_x_continuous(breaks = c(1, 2, 3), labels = c("Stayed", "Left&Returned", "Left"))
-
-ggplot(data_copy, aes(x = demo_oblast)) +
-  geom_bar() +
-  labs(title = "Oblast BEFORE Feb 24th 2022 (w/o Kyiv)",
-       y = "# of respondents") +
-  coord_flip() +
-   geom_text(stat = 'count', aes(label = ..count..), hjust = -0.5, color = "black", size = 5, family = "Garamond") +
-  theme_classic() +
-  theme(plot.title = element_text(family = "Garamond", hjust = 0.5, size = 20),
-        plot.caption = element_text(family = "Garamond"),
-        axis.text.y = element_text(family = "Garamond", size = 15),
-        axis.text.x = element_blank(),
-        axis.title.x = element_text(family = "Garamond"),
-        axis.title.y = element_blank()) +
-  scale_x_continuous(breaks = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25), 
-                   labels = c("Вінницька", "Волинська", "Дніпропетровська", "Донецька", "Житомирська", "Закарпатська", "Запорізька", "Івано-Франківська", "Київська", "Кіровоградська", "Луганська", "Львівська", "м. Київ", "Миколаївська", "Одеська", "Полтавська", "Рівненська", "Сумська", "Тернопільська", "Харківська", "Херсонська", "Хмельницька", "Черкаська", "Чернівецька", "Чернігівська"))
-
-ggplot(data = filter(data_copy, demo_city != "м. Київ"), aes(x = demo_city)) +
-  geom_bar() +
-  labs(title = "City BEFORE Feb 24th 2022 (w/o Kyiv)",
-       y = "# of respondents") +
-  coord_flip() +
-   geom_text(stat = 'count', aes(label = ..count..), hjust = -0.5, color = "black", size = 4, family = "Garamond") +
-  theme_classic() +
-    theme(plot.title = element_text(family = "Garamond", hjust = 0.5, size = 20),
-        plot.caption = element_text(family = "Garamond"),
-        axis.text.x = element_blank(),
-        axis.title.x = element_text(family = "Garamond"),
-        axis.title.y = element_blank())
-
-
-ggplot(data_copy, aes(x = oblast_moving)) +
-  geom_bar() +
-  labs(title = "Oblast AFTER Feb 24th 2022 (w/o Kyiv)",
-       y = "# of respondents") +
-  coord_flip() +
-   geom_text(stat = 'count', aes(label = ..count..), hjust = -0.5, color = "black", size = 5, family = "Garamond") +
-  theme_classic() +
-  theme(plot.title = element_text(family = "Garamond", hjust = 0.5, size = 20),
-        plot.caption = element_text(family = "Garamond"),
-        axis.text.y = element_text(family = "Garamond", size = 15),
-        axis.text.x = element_blank(),
-        axis.title.x = element_text(family = "Garamond"),
-        axis.title.y = element_blank()) +
-  scale_x_continuous(breaks = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25), 
-                   labels = c("Вінницька", "Волинська", "Дніпропетровська", "Донецька", "Житомирська", "Закарпатська", "Запорізька", "Івано-Франківська", "Київська", "Кіровоградська", "Луганська", "Львівська", "м. Київ", "Миколаївська", "Одеська", "Полтавська", "Рівненська", "Сумська", "Тернопільська", "Харківська", "Херсонська", "Хмельницька", "Черкаська", "Чернівецька", "Чернігівська"))
-
-
-
-```
-
-```{r CORR + ALPHA}
-library(corrr)
-library(corrplot)
-library(fontawesome)
-library(correlation)
-# Extract the relevant columns from the dataframe
-plot_war <- dt %>% 
-  select(occupation, bombing, prop_dmg, phys_viol, emo_viol, robbery, fam_afu, fam_death, phys_injury, depression, confid_loss, insom, no_effect)
-
-# Compute the correlation matrix and the p-value matrix
-correlation.matrix <- cor(plot_war) 
-p.mat <- corrplot::cor.mtest(plot_war, conf.level = 0.95)$p
-
-# Mask non-significant values in the correlation matrix
-is.significant <- p.mat < 0.05
-correlation.matrix[!is.significant] <- 0
-
-# Mask the diagonal values
-diag(correlation.matrix) <- 0
-
-# Create the corrplot
-
-
-# Change the row and column names
-colnames(correlation.matrix) <- c("Occupation", "Bombing", "Property", "Physical", 
-                                  "Emotional", "Robbery", "AFU", "Perish", 
-                                  "Injury", "Depression", "Insecurity", "Insomnia", "No effect")
-
-rownames(correlation.matrix) <- colnames(correlation.matrix)
-
-# Create a more contrasting palette centered around -0.3 to 0.3 range
-neg_colors <- colorRampPalette(c("#D32F2F", "#FFEBEE"))(150) # For negative correlations
-neutral_colors <- "#E0E0E0" # Neutral gray for near-zero correlations
-pos_colors <- colorRampPalette(c("#E3F2FD", "#1976D2"))(150) # For positive correlations
-
-contrast_colors_centered <- c(neg_colors, neutral_colors, pos_colors)
-
-# First plot the lower triangle with numbers
-corrplot(correlation.matrix, 
-         type = "lower", 
-         method = "number",
-         tl.col = "black", 
-         tl.srt = 45, 
-         tl.cex = 0.9, 
-         tl.pos = "lt", 
-         order = "original", 
-         mar = c(0,0,1,0), 
-         addCoef.col = "black",
-         cl.pos="n",
-         number.cex = 1, 
-         number.font = 2, # Bold font for better visibility
-         number.col = "black", # Making the numbers black
-         tl.font = "Garamond",   # Title and Axis Font
-         number.fontface = "Garamond",  # Numbers Font
-         cl.cex = 0.9)
-
-corrplot(correlation.matrix, 
-         type = "upper", 
-         method = "circle", 
-         tl.pos = "n",  # No text labels for upper triangle
-         cl.cex = 1,
-         add = TRUE, 
-         col = contrast_colors_centered)
-
-
-# library(tidygraph)
-# library(see)
-# library(ggraph)
-# 
-# plot_war %>% 
-#   correlation(partial = F) %>% 
-#   plot()
-
-
-
-cronbach_war <- dt %>% 
-  select(occupation, bombing, prop_dmg, phys_viol, emo_viol, robbery, fam_afu, fam_death)
-
-library(psych)
-alpha(cronbach_war)
-```
-
-```{r SUMMARY TABLES}
-table_war_exper <- dt %>%
-  select(gender, occupation, bombing, prop_dmg, phys_viol, emo_viol, robbery, fam_afu, fam_death, war_no_ans, phys_injury, depression, confid_loss, insom, no_effect, eff_no_ans)
-
-# Create table
-table_df <- table_war_exper %>%
-  group_by(gender) %>%
-  summarise(
-    N = n(),
-    Mean_Occupation = sum(occupation, na.rm = TRUE),
-    Mean_Bombing = sum(bombing, na.rm = TRUE),
-    Mean_Property = sum(prop_dmg, na.rm = TRUE),
-    Mean_Physical = sum(phys_viol, na.rm = TRUE),
-    Mean_Emotional = sum(emo_viol, na.rm = TRUE),
-    Mean_Robbery = sum(robbery, na.rm = TRUE),
-    Mean_AFU = sum(fam_afu, na.rm = TRUE),
-    Mean_Perish = sum(fam_death, na.rm = TRUE),
-    Mean_war_no_ans = sum(war_no_ans, na.rm = T),
-    Mean_phys_injury = sum(phys_injury, na.rm = T),
-    Mean_depression = sum(depression, na.rm = T),
-    Mean_confid_loss = sum(confid_loss, na.rm = T),
-    Mean_insom = sum(insom, na.rm = T),
-    Mean_no_effect = sum(no_effect, na.rm = T),
-    Mean_eff_no_ans = sum(eff_no_ans, na.rm = T)
-  ) %>%
-  pivot_longer(
-    cols = starts_with("Mean_"),
-    names_to = "Variable",
-    values_to = "Mean"
-  ) %>%
-  mutate(Variable = str_remove(Variable, "Mean_"))
-
-# Widen the table
-final_table <- table_df %>%
-  pivot_wider(
-    names_from = gender,
-    values_from = Mean,
-    names_prefix = "Mean_",
-    id_cols = "Variable"
-  ) %>%
-  rename(Female = Mean_1, Male = Mean_0) %>%
-  mutate(Total = Female + Male)
-
-final_table
-```
-
-
-## Ukraine regional map
-
-```{r}
-# Survey answers deciphered
-
-# oblast_before - Де Ви проживали до 24 лютого 2022 року?
-#...
-
-# geosoc6 - Що найкраще описує Ваші дії після початку повномасштабного вторгнення 24 лютого 2022 року?
-
-# 1 - Я залишився(лась) в своєму місті (те, в якому проживав до 24.02.2022) 
-# 2 - Я покинув(ла) своє місто (те, в якому проживав до 24.02.2022) і вже повернувся(лась) до цього міста назад
-# 3 - Я покинув(ла) своє місто (те, в якому проживав до 24.02.2022) і НЕ повернувся(лась) до цього міста назад
-
-
-# geosoc7 - Куди Ви переїждали після початку повномасштабного вторгнення (після 24 лютого 2022 року)? (якщо Ви переїжджали кілька разів, виберіть варіант, де Ви залишалися найдовше)
-# 1 - В межах моєї області
-# 2 - В іншу область України
-# 3 - За кордон
-
-
-# oblast_moving - До якої області Ви переїжджали після початку повномасштабного вторгнення (після 24 лютого 2022 року)?
-#...
-
-# geosoc9 - До якої країни Ви переїждали після початку повномасштабного вторгнення (після 24 лютого 2022 року?
-# 1 - Польша
-# 2 - Німеччина
-# 3 - Чехія
-# 4 - Інша
-
-# geosoc10 - Чи плануєте Ви повернутись в Україну?
-# 1 - Так, планую
-# 2  - Ні, не планую
-# 3 - Ще не визначився(лась)
-
-
-# q21 - Який Ваш індивідуальний середній місячний дохід у 2023 році (усі джерела)?
-# 1 - Менше 5 000 грн
-# 2 - 5 000 - 19 999 грн
-# 3 - 20 000 - 39 999 грн
-# 4 - 40 000 - 59 999 грн
-# 5 - 60 000 - 79 999 грн
-# 6 - Більше 80 000 грн
-# 7 - Не хочу відповідати
-
-# q21_1 - Який Ваш сімейний середній місячний дохід у 2023 році (усі джерела)?
-# 1 - Менше 5 000 грн
-# 2 - 5 000 - 19 999 грн
-# 3 - 20 000 - 39 999 грн
-# 4 - 40 000 - 59 999 грн
-# 5 - 60 000 - 79 999 грн
-# 6 - Більше 80 000 грн
-# 7 - Не хочу відповідати
-
-# q22 - Які Ваші очікування щодо власного фінансового становища на наступні 12 місяців? Я очікую що…
-# 1 - Буде набагато гірше, ніж зараз
-# 2 - Буде дещо гірше, ніж зараз
-# 3 - Буде приблизно так само
-# 4 - Буде дещо краще, ніж зараз
-# 5 - Буде набагато краще, ніж зараз
- 
-# q23 - Загалом, враховуючи вплив повномаштабної війни, як змінилося Ваше фінансове становище протягом війни, порівняно з початком 2022 року?
-# 1 - Суттєво погіршилось
-# 2 - Дещо погіршилось
-# 3 - Ніяк не змінилось
-# 4 - Дещо покращилось
-# 5 - Суттєво покращилось
-
-# q24 - Чи є у Вас наразі будь-які фінансові зобов'язання (оплата по кредиту, аліменти, штрафи, іпотека, розстрочка, кредитний ліміт тощо), які Вам необхідно сплатити?
-# Так, є
-# Ні, немає
-
-# q25 - Яку частину Ваших місячних доходів Ви витрачаєте на виплату фінансових зобов'язань?
-# 1 - Меншу частину
-# 2 - Половину
-# 3 - Більшу частину
-
-# q26_1 - Скільки часу протягом останніх чотирьох тижнів Ви почувалися спокійним(ою)?
-# 1 - Весь час
-# 2 - Більшу частину часу
-# 3 - Досить часто
-# 4 - Іноді
-# 5 - Меншу частину часу
-# 6 - Зовсім не почувався(лась) спокійним(ою)
- 
-# q26_2 - Скільки часу протягом останніх чотирьох тижнів Ви почувалися сповненими енергії?
-# 1 - Весь час
-# 2 - Більшу частину часу
-# 3 - Досить часто
-# 4 - Іноді
-# 5 - Меншу частину часу
-# 6 - Зовсім не почувався(лась) сповненим(ою) енергією
- 
-# q26_3 - Скільки часу протягом останніх чотирьох тижнів Ви почувалися пригнічено?
-# 1 - Весь час
-# 2 - Більшу частину часу
-# 3 - Досить часто
-# 4 - Іноді
-# 5 - Меншу частину часу
-# 6 - Зовсім не почувався(лась) пригніченим(ою)
-
-#q27_intro - Наступні запитання стосуються Вашого досвіду повномасштабної війни. Вони можуть бути досить чутливими для деяких людей. Ваші відповіді дуже важливі для нас, і якщо Ви не хочете відповідати на них, то можете обрати "Не хочу відповідати"
-
-# q27 - Виберіть усе, з чим Ви стикалися з початку повномасштабної війни?
-
-# q27_1 - Евакуація
-# q27_2 - Життя на окупованій території
-# q27_3 - Стрілянина / бомбардування / ракетні атаки
-# q27_4 - Пошкодження власного майна внаслідок бойових дій
-# q27_5 - Фізичне насилля зі зброєю або без неї
-# q27_6 - Емоційне насилля (погроза фізичної розправи, приниження, залякування)
-# q27_7 - Пограбування, крадіжка або шахрайство
-# q27_8 - Служба близької людини у складі Сил оборони України (ЗСУ, Нацгвардія)
-# q27_9 - Втрата близької людини (родича, друга) внаслідок військової агресії росії
-# q27_10 - Не хочу відовідати
-
-# q28 - Чи страждали Ви від будь-якої з наведених нижче проблем, що виникли після початку війни в лютому 2022 року?
-
-# q28_1 - Тілесні ушкодження (поранення, переломи тощо)
-# q28_2 - Депресія, тривога або панічні атаки
-# q28_3 - Втрата впевненості в собі, відчуття вразливості
-# q28_4 - Труднощі зі сном та / або концентрацією
-# q28_5 - Жоден з вищеперелічених варіантів
-# q28_6 - Не хочу відповідати
-
-# q39 - На Вашу думку, як довго триватимуть активні бойові дії в Україні?
-# 1 - До кінця осені 2023
-# 2 - До зими 2023-2024
-# 3 - До кінця 2024 року
-# 4 - Активні бойові дії розтягнуться на роки
-# 5 - Інше
-# 6 - Важко відповісти
-
-# geosoc1 - Який Ваш сімейний статус?
-# 1 - Неодружений / незаміжня
-# 2 - Одружений / заміжня і проживаю РАЗОМ з чоловіком / дружиною
-# 3 - Одружений / заміжня і зараз проживаю з чоловіком / дружиною ОКРЕМО
-# 4 - Цивільний шлюб
-# 5 - Розлучений / розлучена
-# 6 - Вдівець / вдова
-# 7 - Не хочу відповідати
-
-# geosoc2 - Чи є у Вас діти?
-# 1 - Так, є тільки діти до 18 років
-# 2 - Так, є тільки повнолітні (старше 18 років) діти
-# 3 - Так, є як повнолітні, так і неповнолітні діти
-# 4 - Ні, але наразі очікуємо на появу
-# 5 - Ні, немає дітей
-
-# geosoc3 - Чи проживаєте Ви разом зі своїми неповнолітніми дітьми?
-# 1 - Проживаю разом з усіма своїми неповнолітніми дітьми
-# 2 - Проживаю разом з деякими своїми неповнолітніми дітьми, не з усіма
-# 3 - Не проживаю разом зі своїми неповнолітніми дітьми
-# 4 - Інше
-
-
-
-```
+## 
